@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PIBG SK Sri Aman — Rekod Bayaran</title>
+<title>PIBG SK Sri Aman — Rekod Sumbangan</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -213,7 +213,7 @@ select:focus{outline:none;border-color:var(--green)}
       <img src="https://i.imgur.com/wpfWEN4.jpeg" alt="Logo Sekolah" style="width:38px;height:38px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,0.5)">
       <div>
         <div class="header-title">PIBG SK Sri Aman</div>
-        <div class="header-sub">Sistem Rekod Bayaran Bulanan</div>
+        <div class="header-sub">Sistem Rekod Sumbangan Bulanan</div>
       </div>
     </div>
     <div class="header-right">
@@ -224,7 +224,7 @@ select:focus{outline:none;border-color:var(--green)}
 
   <div class="admin-bar" id="admin-bar">
     <span class="admin-badge">🔐 ADMIN</span>
-    <span class="admin-bar-text">Mod Admin Aktif — Anda boleh reset dan padam rekod bayaran.</span>
+    <span class="admin-bar-text">Mod Admin Aktif — Anda boleh reset dan padam rekod sumbangan.</span>
     <button class="btn-admin-logout" onclick="adminLogout()">Log Keluar</button>
   </div>
 
@@ -277,13 +277,13 @@ select:focus{outline:none;border-color:var(--green)}
       <div class="rp-resit-no"><span class="rp-resit-badge" id="rp-no">—</span></div>
       <div id="rp-rows"></div>
       <div class="rp-total-box">
-        <div class="rp-total-label">JUMLAH BAYARAN</div>
+        <div class="rp-total-label">JUMLAH SUMBANGAN</div>
         <div class="rp-total-amount" id="rp-jumlah">RM 5.00</div>
       </div>
       <hr class="rp-divider">
       <div class="rp-footer">
-        Resit ini adalah bukti bayaran sah PIBG SK Sri Aman.<br>
-        Bayaran: RM5.00 sebulan / murid<br>
+        Resit ini adalah bukti sumbangan sah PIBG SK Sri Aman.<br>
+        Sumbangan: RM5.00 sebulan / murid<br>
         Terima kasih atas kerjasama anda.
       </div>
       <button class="rp-print-btn" onclick="window.print()">🖨️ Cetak / Simpan PDF</button>
@@ -296,7 +296,7 @@ select:focus{outline:none;border-color:var(--green)}
 <div class="overlay" id="overlay">
   <div class="modal">
     <div class="modal-header">
-      <h3 id="modal-title">Resit Bayaran</h3>
+      <h3 id="modal-title">Resit Sumbangan</h3>
       <button class="close-btn" onclick="closeModal()">✕</button>
     </div>
     <div class="modal-body">
@@ -304,7 +304,7 @@ select:focus{outline:none;border-color:var(--green)}
         <div class="receipt-stamp">BAYAR</div>
         <div class="receipt-header">
           <div class="receipt-school">PIBG SK SRI AMAN</div>
-          <div class="receipt-title">Resit Bayaran PIBG Bulanan</div>
+          <div class="receipt-title">Resit Sumbangan PIBG Bulanan</div>
           <div class="receipt-no" id="r-no">—</div>
         </div>
         <div class="receipt-row"><span class="receipt-key">Nama Murid</span><span class="receipt-val" id="r-nama">—</span></div>
@@ -313,7 +313,7 @@ select:focus{outline:none;border-color:var(--green)}
         <div class="receipt-row"><span class="receipt-key">Bulan</span><span class="receipt-val" id="r-bulan">—</span></div>
         <div class="receipt-row"><span class="receipt-key">Tarikh</span><span class="receipt-val" id="r-tarikh">—</span></div>
         <div class="receipt-total">
-          <span class="total-label">Jumlah Bayaran</span>
+          <span class="total-label">Jumlah Sumbangan</span>
           <span class="total-amount" id="r-jumlah">RM 5.00</span>
         </div>
       </div>
@@ -330,7 +330,7 @@ select:focus{outline:none;border-color:var(--green)}
       <button class="close-btn" onclick="closeAdminLogin()">✕</button>
     </div>
     <div class="modal-body">
-      <div class="admin-desc">Masukkan kata laluan untuk mengakses fungsi pengurusan rekod bayaran.</div>
+      <div class="admin-desc">Masukkan kata laluan untuk mengakses fungsi pengurusan rekod sumbangan.</div>
       <div class="admin-field">
         <label>Kata Laluan Admin</label>
         <input type="password" id="admin-pwd" placeholder="Masukkan kata laluan..."
@@ -605,7 +605,7 @@ async function adminReset(studentKey) {
   const s = students[studentKey];
   const mk = getMonthKey();
   const p = payments[studentKey];
-  if (!confirm(`Reset bayaran ${BULAN_NAMA[curMonth]} ${curYear} untuk:\n${s.nama}\n\nRekod akan dihapuskan.`)) return;
+  if (!confirm(`Reset sumbangan ${BULAN_NAMA[curMonth]} ${curYear} untuk:\n${s.nama}\n\nRekod akan dihapuskan.`)) return;
   try {
     const updates = {};
     updates[`pibgapp-payments/${studentKey}/${mk}`] = null;
@@ -618,7 +618,7 @@ async function adminPadamSemua() {
   const mk = getMonthKey();
   const paidList = Object.entries(payments);
   if (paidList.length === 0) { alert('Tiada rekod untuk dipadam bagi bulan ini.'); return; }
-  if (!confirm(`AMARAN!\n\nPadam SEMUA ${paidList.length} rekod bayaran\nKelas: ${selectedKelas}\nBulan: ${BULAN_NAMA[curMonth]} ${curYear}\n\nTindakan ini TIDAK boleh dibatalkan!`)) return;
+  if (!confirm(`AMARAN!\n\nPadam SEMUA ${paidList.length} rekod sumbangan\nKelas: ${selectedKelas}\nBulan: ${BULAN_NAMA[curMonth]} ${curYear}\n\nTindakan ini TIDAK boleh dibatalkan!`)) return;
   try {
     const updates = {};
     for (const [key, p] of paidList) {
@@ -813,7 +813,7 @@ function openAnnualReceiptModal(key, mk) {
   document.getElementById('r-bulan').textContent = p.bulanLiputan || `${p.bulan} ${p.tahun}`;
   document.getElementById('r-tarikh').textContent = p.tarikh;
   document.getElementById('r-jumlah').textContent = `RM ${parseFloat(p.jumlah || 5).toFixed(2)}`;
-  document.getElementById('modal-title').textContent = 'Resit Bayaran';
+  document.getElementById('modal-title').textContent = 'Resit Sumbangan';
   const resitLink = window.location.href.split('?')[0] + '?resit=' + p.resitNo;
   document.getElementById('modal-actions').innerHTML = `
     <button class="btn-modal btn-batal" onclick="closeModal()">Tutup</button>
@@ -826,7 +826,7 @@ function openAnnualReceiptModal(key, mk) {
 async function padamAnnualFromModal(key, mk) {
   const p = annualPayments[key]?.[mk];
   const mo = parseInt(mk.split('-')[1]) - 1;
-  if (!confirm(`Padam bayaran ${BULAN_NAMA[mo]} ${curYear} untuk ${students[key].nama}?`)) return;
+  if (!confirm(`Padam sumbangan ${BULAN_NAMA[mo]} ${curYear} untuk ${students[key].nama}?`)) return;
   try {
     const updates = { [`pibgapp-payments/${key}/${mk}`]: null };
     // Only remove receipt if this is a single-month payment (not shared lump sum)
@@ -855,7 +855,7 @@ async function adminPadamSemuaAnnual() {
     }
   }
   if (totalPaid === 0) { alert('Tiada rekod untuk dipadam.'); return; }
-  if (!confirm(`AMARAN!\n\nPadam SEMUA ${totalPaid} rekod bayaran (Mei–Nov ${curYear})\nKelas: ${selectedKelas}\n\nTindakan ini TIDAK BOLEH dibatalkan!`)) return;
+  if (!confirm(`AMARAN!\n\nPadam SEMUA ${totalPaid} rekod sumbangan (Mei–Nov ${curYear})\nKelas: ${selectedKelas}\n\nTindakan ini TIDAK BOLEH dibatalkan!`)) return;
   for (const rno of resitNosToDelete) updates[`pibgapp-receipts/${rno}`] = null;
   try {
     await db.ref().update(updates);
@@ -873,7 +873,7 @@ function openReceiptModal(studentKey) {
   document.getElementById('r-bulan').textContent = p.bulanLiputan || `${BULAN_NAMA[curMonth]} ${curYear}`;
   document.getElementById('r-tarikh').textContent = p.tarikh;
   document.getElementById('r-jumlah').textContent = `RM ${parseFloat(p.jumlah || 5).toFixed(2)}`;
-  document.getElementById('modal-title').textContent = 'Resit Bayaran';
+  document.getElementById('modal-title').textContent = 'Resit Sumbangan';
   const resitLink = window.location.href.split('?')[0] + '?resit=' + p.resitNo;
   document.getElementById('modal-actions').innerHTML = `
     <button class="btn-modal btn-batal" onclick="closeModal()">Tutup</button>
@@ -887,7 +887,7 @@ async function padamModal(studentKey) {
   const s = students[studentKey];
   const mk = getMonthKey();
   const p = payments[studentKey];
-  if (!confirm(`Padam rekod bayaran ${BULAN_NAMA[curMonth]} ${curYear} untuk ${s.nama}?`)) return;
+  if (!confirm(`Padam rekod sumbangan ${BULAN_NAMA[curMonth]} ${curYear} untuk ${s.nama}?`)) return;
   try {
     const updates = {};
     updates[`pibgapp-payments/${studentKey}/${mk}`] = null;
@@ -936,9 +936,9 @@ async function showReceiptPage(resitNo) {
     <div class="rp-row"><span class="rp-key">Nama Murid</span><span class="rp-val">${p.nama}</span></div>
     <div class="rp-row"><span class="rp-key">No. IC / Pengenalan</span><span class="rp-val">${p.noic || '—'}</span></div>
     <div class="rp-row"><span class="rp-key">Kelas</span><span class="rp-val">${p.kelas}</span></div>
-    <div class="rp-row"><span class="rp-key">Bulan Bayaran</span><span class="rp-val">${bulanDisplay}</span></div>
+    <div class="rp-row"><span class="rp-key">Bulan Sumbangan</span><span class="rp-val">${bulanDisplay}</span></div>
     <div class="rp-row"><span class="rp-key">Tarikh Bayar</span><span class="rp-val">${p.tarikh}</span></div>
-    <div class="rp-row"><span class="rp-key">Jenis Bayaran</span><span class="rp-val">${jenisDisplay}</span></div>`;
+    <div class="rp-row"><span class="rp-key">Jenis Sumbangan</span><span class="rp-val">${jenisDisplay}</span></div>`;
 }
 
 document.getElementById('overlay').addEventListener('click', e => { if (e.target === document.getElementById('overlay')) closeModal(); });
