@@ -90,6 +90,37 @@ select:focus{outline:none;border-color:var(--green)}
 .btn-padam-semua{padding:9px 14px;background:var(--red-light);color:var(--red);border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer}
 .btn-padam-semua:hover{background:#f7c1c1}
 
+/* VIEW TOGGLE */
+.view-toggle{display:flex;gap:4px}
+.vt-btn{padding:6px 16px;border:1px solid var(--border);border-radius:8px;background:#fff;font-size:13px;font-weight:500;cursor:pointer;color:var(--text2);white-space:nowrap}
+.vt-btn:hover{background:var(--green-light);border-color:var(--green);color:var(--green-dark)}
+.vt-btn.active{background:var(--green);border-color:var(--green);color:#fff;font-weight:600}
+
+/* ANNUAL TABLE */
+.table-scroll{overflow-x:auto;border-radius:10px;border:1px solid var(--border);background:var(--card)}
+.annual-table{width:100%;border-collapse:collapse;font-size:13px;min-width:580px}
+.annual-table thead tr{background:var(--green);color:#fff}
+.annual-table th{padding:10px 6px;text-align:center;font-weight:600;white-space:nowrap;font-size:12px}
+.th-no{width:36px}
+.th-nama{text-align:left;min-width:180px;padding-left:14px !important}
+.th-month{width:52px}
+.th-total{width:68px;padding-right:10px !important}
+.annual-table tbody tr:nth-child(even){background:#fafaf7}
+.annual-table tbody tr:hover{background:#f0faf5}
+.annual-table td{padding:7px 4px;text-align:center;border-bottom:1px solid #f0f0ec}
+.td-no{color:var(--gray);font-size:12px;width:36px}
+.td-nama{text-align:left;padding-left:14px !important;font-weight:500;font-size:13px}
+.td-noic{font-size:11px;color:var(--text2);font-weight:400;margin-top:1px}
+.td-month{cursor:pointer;transition:background 0.12s;user-select:none}
+.td-month:hover{background:var(--green-light)}
+.td-month.paid{background:#d4f0e6;color:var(--green-dark);font-weight:700;font-size:14px;cursor:default}
+.td-month.paid.can-reset{cursor:pointer}
+.td-month.paid.can-reset:hover{background:#fcd4d4;color:var(--red)}
+.td-month.saving{background:#f0f0f0;color:#aaa;cursor:not-allowed;font-size:11px}
+.td-total{font-size:12px;color:var(--text2);white-space:nowrap;padding-right:10px !important}
+.td-total-paid{font-size:14px;font-weight:700;color:var(--green)}
+.td-total-rm{font-size:11px;color:var(--text2)}
+
 .empty{text-align:center;padding:3rem;color:var(--text2)}
 .loading{text-align:center;padding:2rem;color:var(--text2);font-size:14px}
 
@@ -200,12 +231,19 @@ select:focus{outline:none;border-color:var(--green)}
         <option value="">— Pilih Kelas —</option>
       </select>
     </div>
-    <div>
+    <div id="bulan-nav-wrap">
       <div class="ctrl-label">BULAN / TAHUN</div>
       <div class="bulan-nav">
         <button class="nav-btn" onclick="changeBulan(-1)">‹</button>
         <div class="bulan-text" id="bulan-text">—</div>
         <button class="nav-btn" onclick="changeBulan(1)">›</button>
+      </div>
+    </div>
+    <div>
+      <div class="ctrl-label">PAPARAN</div>
+      <div class="view-toggle">
+        <button class="vt-btn active" id="vt-bulanan" onclick="setView('bulanan')">📅 Bulanan</button>
+        <button class="vt-btn" id="vt-tahunan" onclick="setView('tahunan')">📊 Tahunan</button>
       </div>
     </div>
   </div>
@@ -318,15 +356,26 @@ firebase.initializeApp({
 const db = firebase.database();
 
 const BULAN_NAMA = ['Januari','Februari','Mac','April','Mei','Jun','Julai','Ogos','September','Oktober','November','Disember'];
+const ANNUAL_MONTHS = [
+  {key:'05', nama:'Mei',      short:'Mei'},
+  {key:'06', nama:'Jun',      short:'Jun'},
+  {key:'07', nama:'Julai',    short:'Jul'},
+  {key:'08', nama:'Ogos',     short:'Ogs'},
+  {key:'09', nama:'September',short:'Sep'},
+  {key:'10', nama:'Oktober',  short:'Okt'},
+  {key:'11', nama:'November', short:'Nov'},
+];
 let curDate = new Date();
 let curYear = curDate.getFullYear();
 let curMonth = curDate.getMonth();
 let students = {};
 let payments = {};
+let annualPayments = {};
 let currentStudentKey = null;
 let paymentsListener = null;
 let selectedKelas = '';
 let isAdmin = false;
+let viewMode = 'bulanan';
 
 // ===== INIT =====
 window.addEventListener('DOMContentLoaded', () => {
@@ -355,7 +404,17 @@ function changeBulan(dir) {
   if (curMonth > 11) { curMonth = 0; curYear++; }
   if (curMonth < 0)  { curMonth = 11; curYear--; }
   updateBulanText();
-  if (selectedKelas) loadPayments();
+  if (selectedKelas && viewMode === 'bulanan') loadPayments();
+}
+
+function setView(mode) {
+  viewMode = mode;
+  document.getElementById('vt-bulanan').classList.toggle('active', mode === 'bulanan');
+  document.getElementById('vt-tahunan').classList.toggle('active', mode === 'tahunan');
+  document.getElementById('bulan-nav-wrap').style.display = mode === 'bulanan' ? '' : 'none';
+  if (!selectedKelas) return;
+  if (mode === 'bulanan') loadPayments();
+  else loadPaymentsAnnual();
 }
 
 function getMonthKey() {
@@ -426,7 +485,8 @@ async function loadStudents() {
   const sSnap = await db.ref('pibgapp-students/' + selectedKelas).once('value');
   students = {};
   if (sSnap.exists()) sSnap.forEach(c => { students[c.key] = c.val(); });
-  loadPayments();
+  if (viewMode === 'bulanan') loadPayments();
+  else loadPaymentsAnnual();
 }
 
 // ===== LOAD PAYMENTS (realtime) =====
@@ -560,6 +620,161 @@ async function adminPadamSemua() {
       updates[`pibgapp-payments/${key}/${mk}`] = null;
       if (p.resitNo) updates[`pibgapp-receipts/${p.resitNo}`] = null;
     }
+    await db.ref().update(updates);
+  } catch (e) { alert('Ralat: ' + e.message); }
+}
+
+// ===== ANNUAL VIEW =====
+function loadPaymentsAnnual() {
+  if (paymentsListener) { db.ref('pibgapp-payments').off('value', paymentsListener); paymentsListener = null; }
+  paymentsListener = db.ref('pibgapp-payments').on('value', snap => {
+    annualPayments = {};
+    if (snap.exists()) {
+      snap.forEach(sSnap => {
+        const sk = sSnap.key;
+        annualPayments[sk] = {};
+        ANNUAL_MONTHS.forEach(m => {
+          const mk = `${curYear}-${m.key}`;
+          const md = sSnap.child(mk).val();
+          if (md) annualPayments[sk][mk] = md;
+        });
+      });
+    }
+    renderAnnualView();
+  });
+}
+
+function renderAnnualView() {
+  const list = Object.entries(students).sort((a, b) => a[1].nama.localeCompare(b[1].nama));
+  if (list.length === 0) {
+    document.getElementById('student-list').innerHTML = '<div class="empty">Tiada murid dalam kelas ini</div>';
+    resetStats();
+    return;
+  }
+
+  let totalPaid = 0;
+  list.forEach(([key]) => {
+    ANNUAL_MONTHS.forEach(m => {
+      if (annualPayments[key]?.[`${curYear}-${m.key}`]) totalPaid++;
+    });
+  });
+  const totalSlots = list.length * ANNUAL_MONTHS.length;
+  document.getElementById('st-total').textContent = list.length;
+  document.getElementById('st-bayar').textContent = totalPaid;
+  document.getElementById('st-belum').textContent = totalSlots - totalPaid;
+  document.getElementById('st-rm').textContent = 'RM ' + (totalPaid * 5).toFixed(2);
+
+  const theadCols = ANNUAL_MONTHS.map(m => `<th class="th-month">${m.short}</th>`).join('');
+
+  const tbodyRows = list.map(([key, s], i) => {
+    let paidCount = 0;
+    const cells = ANNUAL_MONTHS.map(m => {
+      const mk = `${curYear}-${m.key}`;
+      const paid = !!annualPayments[key]?.[mk];
+      if (paid) {
+        paidCount++;
+        const resetAttr = isAdmin ? `class="td-month paid can-reset" onclick="adminResetAnnual('${key}','${mk}')"` : `class="td-month paid"`;
+        return `<td ${resetAttr}>✓</td>`;
+      }
+      return `<td class="td-month" id="acell-${key}-${mk}" onclick="toggleCheckAnnual('${key}','${mk}')"></td>`;
+    }).join('');
+    return `<tr>
+      <td class="td-no">${i + 1}</td>
+      <td class="td-nama">${s.nama}<div class="td-noic">${s.noic || ''}</div></td>
+      ${cells}
+      <td class="td-total"><span class="td-total-paid">${paidCount}/${ANNUAL_MONTHS.length}</span><div class="td-total-rm">RM ${(paidCount * 5).toFixed(0)}</div></td>
+    </tr>`;
+  }).join('');
+
+  const adminFooter = isAdmin && totalPaid > 0
+    ? `<div class="admin-footer"><button class="btn-padam-semua" onclick="adminPadamSemuaAnnual()">🗑️ Padam Semua Rekod Tahunan</button></div>`
+    : '';
+
+  document.getElementById('student-list').innerHTML =
+    `<div class="kelas-title">${selectedKelas} <span>${curYear} (Mei — Nov)</span></div>
+     <div class="table-scroll">
+       <table class="annual-table">
+         <thead><tr>
+           <th class="th-no">Bil</th>
+           <th class="th-nama">Nama Murid</th>
+           ${theadCols}
+           <th class="th-total">Jumlah</th>
+         </tr></thead>
+         <tbody>${tbodyRows}</tbody>
+       </table>
+     </div>
+     ${adminFooter}`;
+}
+
+async function toggleCheckAnnual(key, mk) {
+  if (annualPayments[key]?.[mk]) return;
+  const cell = document.getElementById('acell-' + key + '-' + mk);
+  if (!cell || cell.classList.contains('saving')) return;
+
+  cell.classList.add('saving');
+  cell.textContent = '…';
+
+  const s = students[key];
+  const yr = parseInt(mk.split('-')[0]);
+  const mo = parseInt(mk.split('-')[1]) - 1;
+  const tarikh = new Date().toLocaleDateString('ms-MY', {day:'2-digit', month:'long', year:'numeric'});
+
+  try {
+    let resitNo;
+    await db.ref('pibgapp-counter/lastResitNo').transaction(current => {
+      const next = (current || 0) + 1;
+      resitNo = `PIBG-SKSA-${yr}-${String(next).padStart(4, '0')}`;
+      return next;
+    });
+    const payData = {
+      resitNo, tarikh,
+      nama: s.nama, noic: s.noic || '', kelas: s.kelas,
+      bulan: BULAN_NAMA[mo], tahun: yr,
+      jumlah: 5, monthKey: mk
+    };
+    const updates = {};
+    updates[`pibgapp-payments/${key}/${mk}`] = payData;
+    updates[`pibgapp-receipts/${resitNo}`] = payData;
+    await db.ref().update(updates);
+  } catch (e) {
+    alert('Ralat: ' + e.message);
+    cell.classList.remove('saving');
+    cell.textContent = '';
+  }
+}
+
+async function adminResetAnnual(key, mk) {
+  const s = students[key];
+  const p = annualPayments[key]?.[mk];
+  const mo = parseInt(mk.split('-')[1]) - 1;
+  const yr = mk.split('-')[0];
+  if (!confirm(`Reset bayaran ${BULAN_NAMA[mo]} ${yr} untuk:\n${s.nama}?`)) return;
+  try {
+    const updates = {};
+    updates[`pibgapp-payments/${key}/${mk}`] = null;
+    if (p?.resitNo) updates[`pibgapp-receipts/${p.resitNo}`] = null;
+    await db.ref().update(updates);
+  } catch (e) { alert('Ralat: ' + e.message); }
+}
+
+async function adminPadamSemuaAnnual() {
+  if (!isAdmin) return;
+  let totalPaid = 0;
+  const updates = {};
+  for (const [key] of Object.entries(students)) {
+    for (const m of ANNUAL_MONTHS) {
+      const mk = `${curYear}-${m.key}`;
+      const p = annualPayments[key]?.[mk];
+      if (p) {
+        totalPaid++;
+        updates[`pibgapp-payments/${key}/${mk}`] = null;
+        if (p.resitNo) updates[`pibgapp-receipts/${p.resitNo}`] = null;
+      }
+    }
+  }
+  if (totalPaid === 0) { alert('Tiada rekod untuk dipadam.'); return; }
+  if (!confirm(`AMARAN!\n\nPadam SEMUA ${totalPaid} rekod bayaran (Mei–Nov ${curYear})\nKelas: ${selectedKelas}\n\nTindakan ini TIDAK BOLEH dibatalkan!`)) return;
+  try {
     await db.ref().update(updates);
   } catch (e) { alert('Ralat: ' + e.message); }
 }
