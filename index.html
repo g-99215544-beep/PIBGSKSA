@@ -62,7 +62,7 @@ select:focus{outline:none;border-color:var(--green)}
 .student-row{background:var(--card);border:1px solid var(--border);border-radius:10px;display:flex;align-items:center;padding:10px 14px;gap:10px;transition:all 0.15s}
 .student-row.unpaid{cursor:pointer}
 .student-row.unpaid:hover{border-color:var(--green);box-shadow:0 2px 8px rgba(29,158,117,0.12)}
-.student-row.selected{background:var(--green-light);border-color:var(--green)}
+.student-row.saving{opacity:0.55;pointer-events:none}
 .student-row.paid{background:#f0faf6;border-color:#9FE1CB}
 
 .s-no{font-size:13px;color:var(--gray);min-width:24px;font-weight:500}
@@ -82,20 +82,12 @@ select:focus{outline:none;border-color:var(--green)}
 /* CHECKBOX */
 .chk-wrapper{display:flex;align-items:center;justify-content:center;width:34px;height:34px;flex-shrink:0}
 .chk-box{width:22px;height:22px;border:2px solid #ccc;border-radius:6px;background:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:transparent;transition:all 0.15s}
-.student-row.selected .chk-box{background:var(--green);border-color:var(--green);color:#fff}
 .student-row.unpaid:hover .chk-box{border-color:var(--green)}
+.student-row.saving .chk-box{border-color:#aaa;background:#f0f0f0}
 
-/* BULK BAR */
-.bulk-bar{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-top:12px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
-.bulk-left{display:flex;flex-direction:column;gap:3px}
-.bulk-info{font-size:13px;color:var(--text2)}
-.bulk-info strong{color:var(--green);font-size:15px}
-.bulk-rm{font-size:12px;color:var(--green-dark);font-weight:500}
-.bulk-right{display:flex;gap:8px;flex-wrap:wrap}
-.btn-bulk-save{padding:10px 20px;background:var(--green);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer}
-.btn-bulk-save:hover{background:var(--green-dark)}
-.btn-bulk-save:disabled{background:#bbb;cursor:not-allowed}
-.btn-padam-semua{padding:10px 14px;background:var(--red-light);color:var(--red);border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer}
+/* ADMIN PADAM SEMUA */
+.admin-footer{margin-top:12px;display:flex;justify-content:flex-end}
+.btn-padam-semua{padding:9px 14px;background:var(--red-light);color:var(--red);border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer}
 .btn-padam-semua:hover{background:#f7c1c1}
 
 .empty{text-align:center;padding:3rem;color:var(--text2)}
@@ -335,7 +327,6 @@ let currentStudentKey = null;
 let paymentsListener = null;
 let selectedKelas = '';
 let isAdmin = false;
-let selectedForPayment = new Set();
 
 // ===== INIT =====
 window.addEventListener('DOMContentLoaded', () => {
@@ -363,7 +354,6 @@ function changeBulan(dir) {
   curMonth += dir;
   if (curMonth > 11) { curMonth = 0; curYear++; }
   if (curMonth < 0)  { curMonth = 11; curYear--; }
-  selectedForPayment.clear();
   updateBulanText();
   if (selectedKelas) loadPayments();
 }
@@ -426,7 +416,6 @@ async function loadKelasOptions() {
 // ===== LOAD STUDENTS =====
 async function loadStudents() {
   selectedKelas = document.getElementById('kelas-select').value;
-  selectedForPayment.clear();
   if (!selectedKelas) {
     document.getElementById('student-list').innerHTML = '<div class="empty">← Pilih kelas di atas</div>';
     resetStats();
@@ -449,10 +438,7 @@ function loadPayments() {
     if (snap.exists()) {
       snap.forEach(sSnap => {
         const md = sSnap.child(mk).val();
-        if (md) {
-          payments[sSnap.key] = md;
-          selectedForPayment.delete(sSnap.key); // already paid, remove from selection
-        }
+        if (md) payments[sSnap.key] = md;
       });
     }
     renderStudentList();
@@ -487,118 +473,65 @@ function renderStudentList() {
         <button class="s-action btn-lihat" onclick="openReceiptModal('${key}')">Resit</button>
       </div>`;
     } else {
-      const checked = selectedForPayment.has(key);
-      return `<div class="student-row unpaid${checked ? ' selected' : ''}" id="row-${key}" onclick="toggleCheck('${key}')">
+      return `<div class="student-row unpaid" id="row-${key}" onclick="toggleCheck('${key}')">
         <span class="s-no">${i + 1}</span>
         <div class="s-info"><div class="s-nama">${s.nama}</div><div class="s-noic">${s.noic || '—'}</div></div>
         <span class="s-badge badge-belum">Belum</span>
-        <div class="chk-wrapper"><div class="chk-box">${checked ? '✓' : ''}</div></div>
+        <div class="chk-wrapper"><div class="chk-box"></div></div>
       </div>`;
     }
   }).join('');
 
-  const selCount = selectedForPayment.size;
-  const bulkBar = `<div class="bulk-bar">
-    <div class="bulk-left">
-      <div class="bulk-info" id="bulk-info">${
-        selCount > 0
-          ? `<strong>${selCount}</strong> murid dipilih untuk bayaran`
-          : 'Tandakan murid yang telah membayar'
-      }</div>
-      ${selCount > 0 ? `<div class="bulk-rm">Jumlah: RM ${(selCount * 5).toFixed(2)}</div>` : ''}
-    </div>
-    <div class="bulk-right">
-      ${isAdmin && bayarCount > 0 ? `<button class="btn-padam-semua" onclick="adminPadamSemua()">🗑️ Padam Semua Rekod</button>` : ''}
-      <button class="btn-bulk-save" id="btn-bulk-save" ${selCount === 0 ? 'disabled' : ''} onclick="simpanBulk()">
-        ✓ Simpan &amp; Jana Resit Pukal
-      </button>
-    </div>
-  </div>`;
+  const adminFooter = isAdmin && bayarCount > 0
+    ? `<div class="admin-footer"><button class="btn-padam-semua" onclick="adminPadamSemua()">🗑️ Padam Semua Rekod</button></div>`
+    : '';
 
   document.getElementById('student-list').innerHTML =
     `<div class="kelas-title">${selectedKelas} <span>${BULAN_NAMA[curMonth]} ${curYear}</span></div>
      <div class="student-grid">${rows}</div>
-     ${bulkBar}`;
+     ${adminFooter}`;
 }
 
 function resetStats() {
   ['st-total','st-bayar','st-belum','st-rm'].forEach(id => document.getElementById(id).textContent = '—');
 }
 
-// ===== CHECKBOX =====
-function toggleCheck(key) {
+// ===== AUTO-SAVE ON TICK =====
+async function toggleCheck(key) {
   if (payments[key]) return;
-  selectedForPayment.has(key) ? selectedForPayment.delete(key) : selectedForPayment.add(key);
   const row = document.getElementById('row-' + key);
-  if (!row) return;
-  const checked = selectedForPayment.has(key);
-  row.classList.toggle('selected', checked);
+  if (!row || row.classList.contains('saving')) return;
+
+  row.classList.add('saving');
   const box = row.querySelector('.chk-box');
-  if (box) box.textContent = checked ? '✓' : '';
-  updateBulkBar();
-}
+  if (box) box.textContent = '…';
 
-function updateBulkBar() {
-  const count = selectedForPayment.size;
-  const infoEl = document.getElementById('bulk-info');
-  const saveBtn = document.getElementById('btn-bulk-save');
-  if (infoEl) infoEl.innerHTML = count > 0
-    ? `<strong>${count}</strong> murid dipilih untuk bayaran`
-    : 'Tandakan murid yang telah membayar';
-
-  const bulkLeft = document.querySelector('.bulk-left');
-  if (bulkLeft) {
-    let rmEl = bulkLeft.querySelector('.bulk-rm');
-    if (count > 0) {
-      if (!rmEl) { rmEl = document.createElement('div'); rmEl.className = 'bulk-rm'; bulkLeft.appendChild(rmEl); }
-      rmEl.textContent = `Jumlah: RM ${(count * 5).toFixed(2)}`;
-    } else if (rmEl) rmEl.remove();
-  }
-  if (saveBtn) saveBtn.disabled = count === 0;
-}
-
-// ===== BULK SAVE =====
-async function simpanBulk() {
-  const keys = [...selectedForPayment];
-  if (keys.length === 0) return;
-  if (!confirm(`Sahkan bayaran untuk ${keys.length} murid?\nJumlah: RM ${(keys.length * 5).toFixed(2)}`)) return;
-
+  const s = students[key];
   const mk = getMonthKey();
   const tarikh = new Date().toLocaleDateString('ms-MY', {day:'2-digit', month:'long', year:'numeric'});
-  const btn = document.getElementById('btn-bulk-save');
-  if (btn) { btn.disabled = true; btn.textContent = '⏳ Menyimpan...'; }
 
   try {
-    // Atomically reserve N consecutive receipt numbers
-    let startNo;
+    let resitNo;
     await db.ref('pibgapp-counter/lastResitNo').transaction(current => {
-      startNo = (current || 0) + 1;
-      return (current || 0) + keys.length;
+      const next = (current || 0) + 1;
+      resitNo = `PIBG-SKSA-${curYear}-${String(next).padStart(4, '0')}`;
+      return next;
     });
-
+    const payData = {
+      resitNo, tarikh,
+      nama: s.nama, noic: s.noic || '', kelas: s.kelas,
+      bulan: BULAN_NAMA[curMonth], tahun: curYear,
+      jumlah: 5, monthKey: mk
+    };
     const updates = {};
-    for (let i = 0; i < keys.length; i++) {
-      const key = keys[i];
-      const s = students[key];
-      const resitNo = `PIBG-SKSA-${curYear}-${String(startNo + i).padStart(4, '0')}`;
-      const payData = {
-        resitNo, tarikh,
-        nama: s.nama, noic: s.noic || '', kelas: s.kelas,
-        bulan: BULAN_NAMA[curMonth], tahun: curYear,
-        jumlah: 5, monthKey: mk
-      };
-      updates[`pibgapp-payments/${key}/${mk}`] = payData;
-      updates[`pibgapp-receipts/${resitNo}`] = payData;
-    }
+    updates[`pibgapp-payments/${key}/${mk}`] = payData;
+    updates[`pibgapp-receipts/${resitNo}`] = payData;
     await db.ref().update(updates);
-    selectedForPayment.clear();
-
-    const first = `PIBG-SKSA-${curYear}-${String(startNo).padStart(4,'0')}`;
-    const last  = `PIBG-SKSA-${curYear}-${String(startNo + keys.length - 1).padStart(4,'0')}`;
-    alert(`Berjaya! ${keys.length} rekod disimpan.\nNo. Resit: ${keys.length === 1 ? first : first + ' — ' + last}`);
+    // Real-time listener will re-render the row as Bayar
   } catch (e) {
     alert('Ralat menyimpan: ' + e.message);
-    if (btn) { btn.disabled = false; btn.textContent = '✓ Simpan & Jana Resit Pukal'; }
+    row.classList.remove('saving');
+    if (box) box.textContent = '';
   }
 }
 
