@@ -113,13 +113,17 @@ select:focus{outline:none;border-color:var(--green)}
 .td-noic{font-size:11px;color:var(--text2);font-weight:400;margin-top:1px}
 .td-month{cursor:pointer;transition:background 0.12s;user-select:none}
 .td-month:hover{background:var(--green-light)}
-.td-month.paid{background:#d4f0e6;color:var(--green-dark);font-weight:700;font-size:14px;cursor:default}
-.td-month.paid.can-reset{cursor:pointer}
-.td-month.paid.can-reset:hover{background:#fcd4d4;color:var(--red)}
+.td-month.paid{background:#d4f0e6;color:var(--green-dark);font-weight:700;font-size:14px;cursor:pointer}
+.td-month.paid:hover{background:#b8e6d4}
+.td-month.pending{background:#dbeafe;color:#1d4ed8;font-weight:700;font-size:14px;cursor:pointer}
+.td-month.pending:hover{background:#fecaca;color:var(--red)}
 .td-month.saving{background:#f0f0f0;color:#aaa;cursor:not-allowed;font-size:11px}
-.td-total{font-size:12px;color:var(--text2);white-space:nowrap;padding-right:10px !important}
+.td-total{font-size:12px;color:var(--text2);white-space:nowrap;padding-right:6px !important;padding-left:4px !important}
 .td-total-paid{font-size:14px;font-weight:700;color:var(--green)}
 .td-total-rm{font-size:11px;color:var(--text2)}
+.btn-save-row{background:var(--green);color:#fff;border:none;border-radius:7px;padding:6px 8px;font-size:11px;font-weight:700;cursor:pointer;line-height:1.4;width:100%;white-space:nowrap}
+.btn-save-row:hover{background:var(--green-dark)}
+.btn-save-row:disabled{background:#bbb;cursor:not-allowed}
 
 .empty{text-align:center;padding:3rem;color:var(--text2)}
 .loading{text-align:center;padding:2rem;color:var(--text2);font-size:14px}
@@ -274,7 +278,7 @@ select:focus{outline:none;border-color:var(--green)}
       <div id="rp-rows"></div>
       <div class="rp-total-box">
         <div class="rp-total-label">JUMLAH BAYARAN</div>
-        <div class="rp-total-amount">RM 5.00</div>
+        <div class="rp-total-amount" id="rp-jumlah">RM 5.00</div>
       </div>
       <hr class="rp-divider">
       <div class="rp-footer">
@@ -310,7 +314,7 @@ select:focus{outline:none;border-color:var(--green)}
         <div class="receipt-row"><span class="receipt-key">Tarikh</span><span class="receipt-val" id="r-tarikh">—</span></div>
         <div class="receipt-total">
           <span class="total-label">Jumlah Bayaran</span>
-          <span class="total-amount">RM 5.00</span>
+          <span class="total-amount" id="r-jumlah">RM 5.00</span>
         </div>
       </div>
       <div class="modal-actions" id="modal-actions"></div>
@@ -371,6 +375,7 @@ let curMonth = curDate.getMonth();
 let students = {};
 let payments = {};
 let annualPayments = {};
+let annualPending = {}; // {studentKey: Set of monthKeys selected but not yet saved}
 let currentStudentKey = null;
 let paymentsListener = null;
 let selectedKelas = '';
@@ -654,9 +659,7 @@ function renderAnnualView() {
 
   let totalPaid = 0;
   list.forEach(([key]) => {
-    ANNUAL_MONTHS.forEach(m => {
-      if (annualPayments[key]?.[`${curYear}-${m.key}`]) totalPaid++;
-    });
+    ANNUAL_MONTHS.forEach(m => { if (annualPayments[key]?.[`${curYear}-${m.key}`]) totalPaid++; });
   });
   const totalSlots = list.length * ANNUAL_MONTHS.length;
   document.getElementById('st-total').textContent = list.length;
@@ -668,21 +671,28 @@ function renderAnnualView() {
 
   const tbodyRows = list.map(([key, s], i) => {
     let paidCount = 0;
+    const pending = annualPending[key] || new Set();
     const cells = ANNUAL_MONTHS.map(m => {
       const mk = `${curYear}-${m.key}`;
-      const paid = !!annualPayments[key]?.[mk];
-      if (paid) {
+      if (annualPayments[key]?.[mk]) {
         paidCount++;
-        const resetAttr = isAdmin ? `class="td-month paid can-reset" onclick="adminResetAnnual('${key}','${mk}')"` : `class="td-month paid"`;
-        return `<td ${resetAttr}>✓</td>`;
+        return `<td class="td-month paid" onclick="openAnnualReceiptModal('${key}','${mk}')">✓</td>`;
+      }
+      if (pending.has(mk)) {
+        return `<td class="td-month pending" id="acell-${key}-${mk}" onclick="toggleCheckAnnual('${key}','${mk}')">✓</td>`;
       }
       return `<td class="td-month" id="acell-${key}-${mk}" onclick="toggleCheckAnnual('${key}','${mk}')"></td>`;
     }).join('');
+
+    const pendingCount = pending.size;
+    const totalCell = pendingCount > 0
+      ? `<td class="td-total" id="total-${key}"><button class="btn-save-row" onclick="saveAnnualForStudent('${key}')">💾 Simpan<br>RM ${(pendingCount * 5).toFixed(0)}</button></td>`
+      : `<td class="td-total" id="total-${key}"><span class="td-total-paid">${paidCount}/${ANNUAL_MONTHS.length}</span><div class="td-total-rm">RM ${(paidCount * 5).toFixed(0)}</div></td>`;
+
     return `<tr>
       <td class="td-no">${i + 1}</td>
       <td class="td-nama">${s.nama}<div class="td-noic">${s.noic || ''}</div></td>
-      ${cells}
-      <td class="td-total"><span class="td-total-paid">${paidCount}/${ANNUAL_MONTHS.length}</span><div class="td-total-rm">RM ${(paidCount * 5).toFixed(0)}</div></td>
+      ${cells}${totalCell}
     </tr>`;
   }).join('');
 
@@ -695,8 +705,7 @@ function renderAnnualView() {
      <div class="table-scroll">
        <table class="annual-table">
          <thead><tr>
-           <th class="th-no">Bil</th>
-           <th class="th-nama">Nama Murid</th>
+           <th class="th-no">Bil</th><th class="th-nama">Nama Murid</th>
            ${theadCols}
            <th class="th-total">Jumlah</th>
          </tr></thead>
@@ -706,61 +715,134 @@ function renderAnnualView() {
      ${adminFooter}`;
 }
 
-async function toggleCheckAnnual(key, mk) {
-  if (annualPayments[key]?.[mk]) return;
+// Toggle pending state — does NOT save yet
+function toggleCheckAnnual(key, mk) {
+  if (annualPayments[key]?.[mk]) return; // already saved, ignore (use openAnnualReceiptModal instead)
+  if (!annualPending[key]) annualPending[key] = new Set();
+
   const cell = document.getElementById('acell-' + key + '-' + mk);
   if (!cell || cell.classList.contains('saving')) return;
 
-  cell.classList.add('saving');
-  cell.textContent = '…';
-
-  const s = students[key];
-  const yr = parseInt(mk.split('-')[0]);
-  const mo = parseInt(mk.split('-')[1]) - 1;
-  const tarikh = new Date().toLocaleDateString('ms-MY', {day:'2-digit', month:'long', year:'numeric'});
-
-  try {
-    let resitNo;
-    await db.ref('pibgapp-counter/lastResitNo').transaction(current => {
-      const next = (current || 0) + 1;
-      resitNo = `PIBG-SKSA-${yr}-${String(next).padStart(4, '0')}`;
-      return next;
-    });
-    const payData = {
-      resitNo, tarikh,
-      nama: s.nama, noic: s.noic || '', kelas: s.kelas,
-      bulan: BULAN_NAMA[mo], tahun: yr,
-      jumlah: 5, monthKey: mk
-    };
-    const updates = {};
-    updates[`pibgapp-payments/${key}/${mk}`] = payData;
-    updates[`pibgapp-receipts/${resitNo}`] = payData;
-    await db.ref().update(updates);
-  } catch (e) {
-    alert('Ralat: ' + e.message);
-    cell.classList.remove('saving');
+  if (annualPending[key].has(mk)) {
+    annualPending[key].delete(mk);
+    cell.classList.remove('pending');
     cell.textContent = '';
+  } else {
+    annualPending[key].add(mk);
+    cell.classList.add('pending');
+    cell.textContent = '✓';
+  }
+  refreshAnnualTotalCell(key);
+}
+
+function refreshAnnualTotalCell(key) {
+  const totalEl = document.getElementById('total-' + key);
+  if (!totalEl) return;
+  const pending = annualPending[key] || new Set();
+  const pendingCount = pending.size;
+  const paidCount = ANNUAL_MONTHS.filter(m => annualPayments[key]?.[`${curYear}-${m.key}`]).length;
+  if (pendingCount > 0) {
+    totalEl.innerHTML = `<button class="btn-save-row" onclick="saveAnnualForStudent('${key}')">💾 Simpan<br>RM ${(pendingCount * 5).toFixed(0)}</button>`;
+  } else {
+    totalEl.innerHTML = `<span class="td-total-paid">${paidCount}/${ANNUAL_MONTHS.length}</span><div class="td-total-rm">RM ${(paidCount * 5).toFixed(0)}</div>`;
   }
 }
 
-async function adminResetAnnual(key, mk) {
+// Save all pending months for one student as a single lump-sum receipt
+async function saveAnnualForStudent(key) {
+  const pending = annualPending[key];
+  if (!pending || pending.size === 0) return;
+  const monthKeys = [...pending].sort();
+  const count = monthKeys.length;
+  const total = count * 5;
   const s = students[key];
+  const tarikh = new Date().toLocaleDateString('ms-MY', {day:'2-digit', month:'long', year:'numeric'});
+
+  // Build readable month range string
+  const monthNames = monthKeys.map(mk => BULAN_NAMA[parseInt(mk.split('-')[1]) - 1]);
+  const bulanLiputan = count === 1
+    ? `${monthNames[0]} ${curYear}`
+    : `${monthNames[0]} — ${monthNames[monthNames.length - 1]} ${curYear}`;
+
+  const btn = document.querySelector(`#total-${key} .btn-save-row`);
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Menyimpan…'; }
+
+  try {
+    // One atomic transaction for one unique receipt number
+    let resitNo;
+    await db.ref('pibgapp-counter/lastResitNo').transaction(current => {
+      const next = (current || 0) + 1;
+      resitNo = `PIBG-SKSA-${curYear}-${String(next).padStart(4, '0')}`;
+      return next;
+    });
+
+    const updates = {};
+    for (const mk of monthKeys) {
+      const mo = parseInt(mk.split('-')[1]) - 1;
+      updates[`pibgapp-payments/${key}/${mk}`] = {
+        resitNo, tarikh,
+        nama: s.nama, noic: s.noic || '', kelas: s.kelas,
+        bulan: BULAN_NAMA[mo], tahun: curYear,
+        jumlah: total, bilBulan: count, bulanLiputan,
+        bulanList: monthKeys, monthKey: mk
+      };
+    }
+    // One receipt record for the whole lump sum
+    updates[`pibgapp-receipts/${resitNo}`] = {
+      resitNo, tarikh,
+      nama: s.nama, noic: s.noic || '', kelas: s.kelas,
+      tahun: curYear, jumlah: total, bilBulan: count,
+      bulanLiputan, bulanList: monthKeys
+    };
+
+    await db.ref().update(updates);
+    delete annualPending[key]; // clear pending — listener will re-render
+  } catch (e) {
+    alert('Ralat menyimpan: ' + e.message);
+    if (btn) { btn.disabled = false; btn.textContent = `💾 Simpan\nRM ${total}`; }
+  }
+}
+
+function openAnnualReceiptModal(key, mk) {
+  const p = annualPayments[key]?.[mk];
+  if (!p) return;
+  document.getElementById('r-no').textContent = p.resitNo;
+  document.getElementById('r-nama').textContent = p.nama;
+  document.getElementById('r-noic').textContent = p.noic || '—';
+  document.getElementById('r-kelas').textContent = p.kelas;
+  document.getElementById('r-bulan').textContent = p.bulanLiputan || `${p.bulan} ${p.tahun}`;
+  document.getElementById('r-tarikh').textContent = p.tarikh;
+  document.getElementById('r-jumlah').textContent = `RM ${parseFloat(p.jumlah || 5).toFixed(2)}`;
+  document.getElementById('modal-title').textContent = 'Resit Bayaran';
+  const resitLink = window.location.href.split('?')[0] + '?resit=' + p.resitNo;
+  document.getElementById('modal-actions').innerHTML = `
+    <button class="btn-modal btn-batal" onclick="closeModal()">Tutup</button>
+    <button class="btn-modal btn-print" onclick="printResit('${p.resitNo}')">🖨️ Cetak</button>
+    <button class="btn-modal btn-salin" onclick="salinLink('${resitLink}')">🔗 Salin Link</button>
+    ${isAdmin ? `<button class="btn-modal btn-padam" onclick="padamAnnualFromModal('${key}','${mk}')">🗑️ Padam Bulan Ini</button>` : ''}`;
+  document.getElementById('overlay').classList.add('show');
+}
+
+async function padamAnnualFromModal(key, mk) {
   const p = annualPayments[key]?.[mk];
   const mo = parseInt(mk.split('-')[1]) - 1;
-  const yr = mk.split('-')[0];
-  if (!confirm(`Reset bayaran ${BULAN_NAMA[mo]} ${yr} untuk:\n${s.nama}?`)) return;
+  if (!confirm(`Padam bayaran ${BULAN_NAMA[mo]} ${curYear} untuk ${students[key].nama}?`)) return;
   try {
-    const updates = {};
-    updates[`pibgapp-payments/${key}/${mk}`] = null;
-    if (p?.resitNo) updates[`pibgapp-receipts/${p.resitNo}`] = null;
+    const updates = { [`pibgapp-payments/${key}/${mk}`]: null };
+    // Only remove receipt if this is a single-month payment (not shared lump sum)
+    if (p?.resitNo && (!p.bilBulan || p.bilBulan === 1)) {
+      updates[`pibgapp-receipts/${p.resitNo}`] = null;
+    }
     await db.ref().update(updates);
+    closeModal();
   } catch (e) { alert('Ralat: ' + e.message); }
 }
 
 async function adminPadamSemuaAnnual() {
   if (!isAdmin) return;
-  let totalPaid = 0;
   const updates = {};
+  const resitNosToDelete = new Set();
+  let totalPaid = 0;
   for (const [key] of Object.entries(students)) {
     for (const m of ANNUAL_MONTHS) {
       const mk = `${curYear}-${m.key}`;
@@ -768,12 +850,13 @@ async function adminPadamSemuaAnnual() {
       if (p) {
         totalPaid++;
         updates[`pibgapp-payments/${key}/${mk}`] = null;
-        if (p.resitNo) updates[`pibgapp-receipts/${p.resitNo}`] = null;
+        if (p.resitNo) resitNosToDelete.add(p.resitNo);
       }
     }
   }
   if (totalPaid === 0) { alert('Tiada rekod untuk dipadam.'); return; }
   if (!confirm(`AMARAN!\n\nPadam SEMUA ${totalPaid} rekod bayaran (Mei–Nov ${curYear})\nKelas: ${selectedKelas}\n\nTindakan ini TIDAK BOLEH dibatalkan!`)) return;
+  for (const rno of resitNosToDelete) updates[`pibgapp-receipts/${rno}`] = null;
   try {
     await db.ref().update(updates);
   } catch (e) { alert('Ralat: ' + e.message); }
@@ -782,14 +865,14 @@ async function adminPadamSemuaAnnual() {
 // ===== RECEIPT MODAL =====
 function openReceiptModal(studentKey) {
   currentStudentKey = studentKey;
-  const s = students[studentKey];
   const p = payments[studentKey];
   document.getElementById('r-no').textContent = p.resitNo;
   document.getElementById('r-nama').textContent = p.nama;
   document.getElementById('r-noic').textContent = p.noic || '—';
   document.getElementById('r-kelas').textContent = p.kelas;
-  document.getElementById('r-bulan').textContent = `${BULAN_NAMA[curMonth]} ${curYear}`;
+  document.getElementById('r-bulan').textContent = p.bulanLiputan || `${BULAN_NAMA[curMonth]} ${curYear}`;
   document.getElementById('r-tarikh').textContent = p.tarikh;
+  document.getElementById('r-jumlah').textContent = `RM ${parseFloat(p.jumlah || 5).toFixed(2)}`;
   document.getElementById('modal-title').textContent = 'Resit Bayaran';
   const resitLink = window.location.href.split('?')[0] + '?resit=' + p.resitNo;
   document.getElementById('modal-actions').innerHTML = `
@@ -846,13 +929,16 @@ async function showReceiptPage(resitNo) {
   }
   const p = snap.val();
   document.getElementById('rp-no').textContent = p.resitNo;
+  document.getElementById('rp-jumlah').textContent = `RM ${parseFloat(p.jumlah || 5).toFixed(2)}`;
+  const bulanDisplay = p.bulanLiputan || `${p.bulan} ${p.tahun}`;
+  const jenisDisplay = p.bilBulan > 1 ? `Yuran PIBG (${p.bilBulan} bulan)` : 'Yuran PIBG Bulanan';
   document.getElementById('rp-rows').innerHTML = `
     <div class="rp-row"><span class="rp-key">Nama Murid</span><span class="rp-val">${p.nama}</span></div>
     <div class="rp-row"><span class="rp-key">No. IC / Pengenalan</span><span class="rp-val">${p.noic || '—'}</span></div>
     <div class="rp-row"><span class="rp-key">Kelas</span><span class="rp-val">${p.kelas}</span></div>
-    <div class="rp-row"><span class="rp-key">Bulan Bayaran</span><span class="rp-val">${p.bulan} ${p.tahun}</span></div>
+    <div class="rp-row"><span class="rp-key">Bulan Bayaran</span><span class="rp-val">${bulanDisplay}</span></div>
     <div class="rp-row"><span class="rp-key">Tarikh Bayar</span><span class="rp-val">${p.tarikh}</span></div>
-    <div class="rp-row"><span class="rp-key">Jenis Bayaran</span><span class="rp-val">Yuran PIBG Bulanan</span></div>`;
+    <div class="rp-row"><span class="rp-key">Jenis Bayaran</span><span class="rp-val">${jenisDisplay}</span></div>`;
 }
 
 document.getElementById('overlay').addEventListener('click', e => { if (e.target === document.getElementById('overlay')) closeModal(); });
