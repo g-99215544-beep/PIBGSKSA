@@ -15,15 +15,26 @@
 }
 body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
 
-/* ===== HEADER ===== */
+/* HEADER */
 .header{background:var(--green);color:#fff;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,0.15)}
 .header-left{display:flex;align-items:center;gap:10px}
 .header-logo{font-size:22px}
 .header-title{font-size:15px;font-weight:600;line-height:1.2}
 .header-sub{font-size:11px;opacity:0.85}
-.header-right{font-size:12px;opacity:0.9;text-align:right}
+.header-right{display:flex;align-items:center;gap:10px}
+.header-date{font-size:12px;opacity:0.9;text-align:right}
+.btn-admin{background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.4);color:#fff;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap}
+.btn-admin:hover{background:rgba(255,255,255,0.25)}
+.btn-admin.active{background:rgba(231,76,60,0.85);border-color:rgba(192,57,43,0.9)}
 
-/* ===== CONTROLS ===== */
+/* ADMIN BAR */
+.admin-bar{background:#2C3E50;color:#fff;padding:8px 20px;display:none;align-items:center;gap:10px;flex-wrap:wrap}
+.admin-badge{background:#e74c3c;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:0.5px;white-space:nowrap}
+.admin-bar-text{flex:1;font-size:13px;opacity:0.85}
+.btn-admin-logout{background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:#fff;padding:5px 12px;border-radius:6px;font-size:12px;cursor:pointer;white-space:nowrap}
+.btn-admin-logout:hover{background:rgba(255,255,255,0.25)}
+
+/* CONTROLS */
 .controls{background:var(--card);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .ctrl-label{font-size:12px;color:var(--text2);font-weight:500}
 select{padding:7px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;background:#fff;color:var(--text);cursor:pointer}
@@ -33,7 +44,7 @@ select:focus{outline:none;border-color:var(--green)}
 .nav-btn:hover{background:var(--green-light);border-color:var(--green);color:var(--green)}
 .bulan-text{font-size:14px;font-weight:600;min-width:130px;text-align:center}
 
-/* ===== STATS BAR ===== */
+/* STATS BAR */
 .stats-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);border-bottom:1px solid var(--border)}
 .stat-item{background:var(--card);padding:10px 16px;text-align:center}
 .stat-num{font-size:20px;font-weight:700}
@@ -42,46 +53,70 @@ select:focus{outline:none;border-color:var(--green)}
 .stat-num.blue{color:var(--blue)}
 .stat-label{font-size:11px;color:var(--text2);margin-top:1px}
 
-/* ===== STUDENT LIST ===== */
+/* STUDENT LIST */
 .main{padding:16px 20px;max-width:900px;margin:0 auto}
 .kelas-title{font-size:13px;font-weight:600;color:var(--text2);margin-bottom:10px;display:flex;align-items:center;gap:8px}
 .kelas-title span{background:var(--green-light);color:var(--green-dark);padding:2px 10px;border-radius:20px;font-size:12px}
-
 .student-grid{display:flex;flex-direction:column;gap:6px}
-.student-row{background:var(--card);border:1px solid var(--border);border-radius:10px;display:flex;align-items:center;padding:10px 14px;gap:12px;cursor:pointer;transition:all 0.15s}
-.student-row:hover{border-color:var(--green);box-shadow:0 2px 8px rgba(29,158,117,0.12)}
-.student-row.bayar{background:#f0faf6;border-color:#9FE1CB}
-.student-row.bayar:hover{border-color:var(--green)}
-.s-no{font-size:13px;color:var(--gray);min-width:26px;font-weight:500}
-.s-info{flex:1}
+
+.student-row{background:var(--card);border:1px solid var(--border);border-radius:10px;display:flex;align-items:center;padding:10px 14px;gap:10px;transition:all 0.15s}
+.student-row.unpaid{cursor:pointer}
+.student-row.unpaid:hover{border-color:var(--green);box-shadow:0 2px 8px rgba(29,158,117,0.12)}
+.student-row.selected{background:var(--green-light);border-color:var(--green)}
+.student-row.paid{background:#f0faf6;border-color:#9FE1CB}
+
+.s-no{font-size:13px;color:var(--gray);min-width:24px;font-weight:500}
+.s-info{flex:1;min-width:0}
 .s-nama{font-size:14px;font-weight:500}
 .s-noic{font-size:12px;color:var(--text2);margin-top:1px}
-.s-badge{padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;white-space:nowrap}
+.s-badge{padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;white-space:nowrap;flex-shrink:0}
 .badge-bayar{background:var(--green-light);color:var(--green-dark)}
 .badge-belum{background:#f5f5f0;color:var(--gray)}
-.s-action{padding:6px 14px;border-radius:7px;border:none;font-size:13px;font-weight:600;cursor:pointer}
-.btn-rekod{background:var(--green);color:#fff}
-.btn-rekod:hover{background:var(--green-dark)}
+
+.s-action{padding:6px 12px;border-radius:7px;border:none;font-size:13px;font-weight:600;cursor:pointer;flex-shrink:0}
 .btn-lihat{background:var(--green-light);color:var(--green-dark)}
 .btn-lihat:hover{background:#9FE1CB}
+.btn-reset{background:var(--red-light);color:var(--red);padding:6px 10px;border-radius:7px;border:none;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0}
+.btn-reset:hover{background:#f7c1c1}
+
+/* CHECKBOX */
+.chk-wrapper{display:flex;align-items:center;justify-content:center;width:34px;height:34px;flex-shrink:0}
+.chk-box{width:22px;height:22px;border:2px solid #ccc;border-radius:6px;background:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:transparent;transition:all 0.15s}
+.student-row.selected .chk-box{background:var(--green);border-color:var(--green);color:#fff}
+.student-row.unpaid:hover .chk-box{border-color:var(--green)}
+
+/* BULK BAR */
+.bulk-bar{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-top:12px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.bulk-left{display:flex;flex-direction:column;gap:3px}
+.bulk-info{font-size:13px;color:var(--text2)}
+.bulk-info strong{color:var(--green);font-size:15px}
+.bulk-rm{font-size:12px;color:var(--green-dark);font-weight:500}
+.bulk-right{display:flex;gap:8px;flex-wrap:wrap}
+.btn-bulk-save{padding:10px 20px;background:var(--green);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer}
+.btn-bulk-save:hover{background:var(--green-dark)}
+.btn-bulk-save:disabled{background:#bbb;cursor:not-allowed}
+.btn-padam-semua{padding:10px 14px;background:var(--red-light);color:var(--red);border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer}
+.btn-padam-semua:hover{background:#f7c1c1}
 
 .empty{text-align:center;padding:3rem;color:var(--text2)}
 .loading{text-align:center;padding:2rem;color:var(--text2);font-size:14px}
 
-/* ===== MODAL ===== */
+/* MODAL */
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;display:none;align-items:center;justify-content:center;padding:1rem}
 .overlay.show{display:flex}
 .modal{background:#fff;border-radius:16px;width:100%;max-width:460px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.3)}
+.modal-sm{max-width:360px}
 .modal-header{background:var(--green);color:#fff;padding:16px 20px;display:flex;justify-content:space-between;align-items:center}
+.modal-header.dark{background:#2C3E50}
 .modal-header h3{font-size:16px;font-weight:600}
 .close-btn{background:rgba(255,255,255,0.2);border:none;color:#fff;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center}
 .close-btn:hover{background:rgba(255,255,255,0.35)}
 .modal-body{padding:20px}
 
-/* ===== RECEIPT ===== */
+/* RECEIPT */
 .receipt{border:2px dashed var(--border);border-radius:12px;padding:16px;margin-bottom:16px;position:relative}
 .receipt-header{text-align:center;margin-bottom:14px;padding-bottom:10px;border-bottom:1px dashed var(--border)}
-.receipt-school{font-size:13px;font-weight:700;color:var(--text)}
+.receipt-school{font-size:13px;font-weight:700}
 .receipt-title{font-size:11px;color:var(--text2);margin-top:2px}
 .receipt-no{font-size:11px;color:var(--green-dark);font-weight:600;margin-top:6px;background:var(--green-light);padding:3px 10px;border-radius:20px;display:inline-block}
 .receipt-row{display:flex;justify-content:space-between;font-size:13px;padding:5px 0;border-bottom:1px solid #f0f0ec}
@@ -94,7 +129,7 @@ select:focus{outline:none;border-color:var(--green)}
 .receipt-stamp{position:absolute;top:14px;right:14px;background:var(--green);color:#fff;font-size:10px;font-weight:700;padding:4px 8px;border-radius:6px;transform:rotate(10deg);opacity:0.85}
 
 .modal-actions{display:flex;gap:8px;flex-wrap:wrap}
-.btn-modal{flex:1;padding:10px;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;min-width:100px}
+.btn-modal{flex:1;padding:10px;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;min-width:90px}
 .btn-print{background:var(--blue-light);color:var(--blue)}
 .btn-print:hover{background:#B5D4F4}
 .btn-salin{background:var(--green-light);color:var(--green-dark)}
@@ -102,14 +137,21 @@ select:focus{outline:none;border-color:var(--green)}
 .btn-batal{background:#f5f5f0;color:var(--gray)}
 .btn-batal:hover{background:#e8e8e3}
 .btn-padam{background:var(--red-light);color:var(--red)}
-.btn-padam:hover{background:#F7C1C1}
+.btn-padam:hover{background:#f7c1c1}
 
-/* ===== RECEIPT PAGE (standalone) ===== */
+/* ADMIN LOGIN */
+.admin-field{margin-bottom:12px}
+.admin-field label{display:block;font-size:12px;color:var(--text2);margin-bottom:5px;font-weight:500}
+.admin-field input{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px}
+.admin-field input:focus{outline:none;border-color:#2C3E50}
+.admin-error{color:var(--red);font-size:12px;margin-top:-6px;margin-bottom:10px;display:none}
+.admin-desc{font-size:13px;color:var(--text2);margin-bottom:16px;line-height:1.5}
+
+/* RECEIPT PAGE */
 #receipt-page{display:none;min-height:100vh;background:var(--bg);padding:2rem}
 .receipt-page-inner{max-width:420px;margin:0 auto}
 .receipt-page-card{background:#fff;border-radius:16px;padding:24px;box-shadow:0 4px 20px rgba(0,0,0,0.1)}
 .rp-logo{text-align:center;margin-bottom:16px}
-.rp-logo img{width:60px;height:60px;object-fit:contain}
 .rp-school{font-size:16px;font-weight:700;text-align:center;color:var(--green-dark)}
 .rp-sub{font-size:12px;color:var(--text2);text-align:center;margin-bottom:16px}
 .rp-divider{border:none;border-top:2px dashed var(--border);margin:14px 0}
@@ -127,10 +169,9 @@ select:focus{outline:none;border-color:var(--green)}
 .rp-print-btn:hover{background:var(--green-dark)}
 .rp-back-btn{display:block;width:100%;margin-top:8px;padding:10px;background:none;color:var(--green);border:1px solid var(--green);border-radius:10px;font-size:14px;cursor:pointer;text-align:center;text-decoration:none}
 
-/* ===== PRINT ===== */
 @media print{
   body *{visibility:hidden}
-  .receipt-page-card, .receipt-page-card *{visibility:visible}
+  .receipt-page-card,.receipt-page-card *{visibility:visible}
   .receipt-page-card{position:fixed;left:50%;top:0;transform:translateX(-50%);width:360px;box-shadow:none;border:1px solid #ccc}
   .rp-print-btn,.rp-back-btn{display:none}
 }
@@ -138,7 +179,7 @@ select:focus{outline:none;border-color:var(--green)}
 </head>
 <body>
 
-<!-- ===== ADMIN APP ===== -->
+<!-- ADMIN APP -->
 <div id="admin-app">
   <div class="header">
     <div class="header-left">
@@ -148,7 +189,16 @@ select:focus{outline:none;border-color:var(--green)}
         <div class="header-sub">Sistem Rekod Bayaran Bulanan</div>
       </div>
     </div>
-    <div class="header-right" id="header-date"></div>
+    <div class="header-right">
+      <div class="header-date" id="header-date"></div>
+      <button class="btn-admin" id="btn-admin" onclick="openAdminLogin()">⚙️ Admin</button>
+    </div>
+  </div>
+
+  <div class="admin-bar" id="admin-bar">
+    <span class="admin-badge">🔐 ADMIN</span>
+    <span class="admin-bar-text">Mod Admin Aktif — Anda boleh reset dan padam rekod bayaran.</span>
+    <button class="btn-admin-logout" onclick="adminLogout()">Log Keluar</button>
   </div>
 
   <div class="controls">
@@ -180,7 +230,7 @@ select:focus{outline:none;border-color:var(--green)}
   </div>
 </div>
 
-<!-- ===== RECEIPT PAGE (standalone) ===== -->
+<!-- RECEIPT PAGE -->
 <div id="receipt-page">
   <div class="receipt-page-inner">
     <div class="receipt-page-card" id="rp-card">
@@ -203,16 +253,16 @@ select:focus{outline:none;border-color:var(--green)}
         Terima kasih atas kerjasama anda.
       </div>
       <button class="rp-print-btn" onclick="window.print()">🖨️ Cetak / Simpan PDF</button>
-      <a href="pibg_bayaran.html" class="rp-back-btn">← Kembali ke Sistem Rekod</a>
+      <a href="index.html" class="rp-back-btn">← Kembali ke Sistem Rekod</a>
     </div>
   </div>
 </div>
 
-<!-- ===== PAYMENT MODAL ===== -->
+<!-- PAYMENT VIEW MODAL -->
 <div class="overlay" id="overlay">
   <div class="modal">
     <div class="modal-header">
-      <h3 id="modal-title">Rekod Bayaran</h3>
+      <h3 id="modal-title">Resit Bayaran</h3>
       <button class="close-btn" onclick="closeModal()">✕</button>
     </div>
     <div class="modal-body">
@@ -238,10 +288,32 @@ select:focus{outline:none;border-color:var(--green)}
   </div>
 </div>
 
+<!-- ADMIN LOGIN MODAL -->
+<div class="overlay" id="admin-login-overlay">
+  <div class="modal modal-sm">
+    <div class="modal-header dark">
+      <h3>🔐 Log Masuk Admin</h3>
+      <button class="close-btn" onclick="closeAdminLogin()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="admin-desc">Masukkan kata laluan untuk mengakses fungsi pengurusan rekod bayaran.</div>
+      <div class="admin-field">
+        <label>Kata Laluan Admin</label>
+        <input type="password" id="admin-pwd" placeholder="Masukkan kata laluan..."
+          onkeydown="if(event.key==='Enter') doAdminLogin()">
+      </div>
+      <div class="admin-error" id="admin-error">Kata laluan salah. Cuba lagi.</div>
+      <div class="modal-actions">
+        <button class="btn-modal btn-batal" onclick="closeAdminLogin()">Batal</button>
+        <button class="btn-modal" style="background:#2C3E50;color:#fff" onclick="doAdminLogin()">Log Masuk</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 <script>
-// ===== FIREBASE =====
 firebase.initializeApp({
   apiKey: "AIzaSyBSWbXoKgQt1E8xvJa9zaKyw3e9V_EMxAE",
   authDomain: "sk-sri-aman-database.firebaseapp.com",
@@ -253,35 +325,28 @@ firebase.initializeApp({
 });
 const db = firebase.database();
 
-// ===== STATE =====
 const BULAN_NAMA = ['Januari','Februari','Mac','April','Mei','Jun','Julai','Ogos','September','Oktober','November','Disember'];
 let curDate = new Date();
 let curYear = curDate.getFullYear();
-let curMonth = curDate.getMonth(); // 0-indexed
-let students = {}; // {key: {nama, noic, kelas}}
-let payments = {}; // {studentKey: {resitNo, tarikh, ...}}
+let curMonth = curDate.getMonth();
+let students = {};
+let payments = {};
 let currentStudentKey = null;
-let currentMode = null; // 'rekod' or 'lihat'
-let studentsListener = null;
 let paymentsListener = null;
 let selectedKelas = '';
+let isAdmin = false;
+let selectedForPayment = new Set();
 
 // ===== INIT =====
-window.addEventListener('DOMContentLoaded', async () => {
+window.addEventListener('DOMContentLoaded', () => {
   const params = new URLSearchParams(window.location.search);
   const resitParam = params.get('resit');
-  if (resitParam) {
-    showReceiptPage(resitParam);
-    return;
-  }
-  initAdmin();
-});
-
-function initAdmin() {
+  if (resitParam) { showReceiptPage(resitParam); return; }
   updateHeaderDate();
   updateBulanText();
   loadKelasOptions();
-}
+  setInterval(updateHeaderDate, 60000);
+});
 
 function updateHeaderDate() {
   const now = new Date();
@@ -297,75 +362,106 @@ function updateBulanText() {
 function changeBulan(dir) {
   curMonth += dir;
   if (curMonth > 11) { curMonth = 0; curYear++; }
-  if (curMonth < 0) { curMonth = 11; curYear--; }
+  if (curMonth < 0)  { curMonth = 11; curYear--; }
+  selectedForPayment.clear();
   updateBulanText();
-  if (selectedKelas) loadPayments(selectedKelas);
+  if (selectedKelas) loadPayments();
 }
 
-// ===== LOAD KELAS OPTIONS =====
+function getMonthKey() {
+  return `${curYear}-${String(curMonth + 1).padStart(2, '0')}`;
+}
+
+// ===== ADMIN =====
+function openAdminLogin() {
+  if (isAdmin) { adminLogout(); return; }
+  document.getElementById('admin-pwd').value = '';
+  document.getElementById('admin-error').style.display = 'none';
+  document.getElementById('admin-login-overlay').classList.add('show');
+  setTimeout(() => document.getElementById('admin-pwd').focus(), 120);
+}
+
+function closeAdminLogin() {
+  document.getElementById('admin-login-overlay').classList.remove('show');
+}
+
+function doAdminLogin() {
+  if (document.getElementById('admin-pwd').value === 'admin123') {
+    isAdmin = true;
+    closeAdminLogin();
+    document.getElementById('admin-bar').style.display = 'flex';
+    const btn = document.getElementById('btn-admin');
+    btn.textContent = '🔒 Admin Aktif';
+    btn.classList.add('active');
+    if (selectedKelas) renderStudentList();
+  } else {
+    document.getElementById('admin-error').style.display = 'block';
+    document.getElementById('admin-pwd').value = '';
+    document.getElementById('admin-pwd').focus();
+  }
+}
+
+function adminLogout() {
+  isAdmin = false;
+  document.getElementById('admin-bar').style.display = 'none';
+  const btn = document.getElementById('btn-admin');
+  btn.textContent = '⚙️ Admin';
+  btn.classList.remove('active');
+  if (selectedKelas) renderStudentList();
+}
+
+// ===== KELAS OPTIONS =====
 async function loadKelasOptions() {
   const snap = await db.ref('pibgapp-students').once('value');
   const sel = document.getElementById('kelas-select');
   if (!snap.exists()) { sel.innerHTML = '<option>Tiada data</option>'; return; }
-
-  const klases = Object.keys(snap.val()).sort((a,b) => {
+  const klases = Object.keys(snap.val()).sort((a, b) => {
     const order = ['PRASEKOLAH','TAHUN 1','TAHUN 2','TAHUN 3','TAHUN 4','TAHUN 5','TAHUN 6'];
-    const getOrder = k => { for(let i=0;i<order.length;i++) if(k.startsWith(order[i])) return i+'_'+k; return '9_'+k; };
-    return getOrder(a).localeCompare(getOrder(b));
+    const rank = k => { for (let i = 0; i < order.length; i++) if (k.startsWith(order[i])) return i + '_' + k; return '9_' + k; };
+    return rank(a).localeCompare(rank(b));
   });
-
-  sel.innerHTML = '<option value="">— Pilih Kelas —</option>' +
-    klases.map(k => `<option value="${k}">${k}</option>`).join('');
+  sel.innerHTML = '<option value="">— Pilih Kelas —</option>' + klases.map(k => `<option value="${k}">${k}</option>`).join('');
 }
 
 // ===== LOAD STUDENTS =====
 async function loadStudents() {
   selectedKelas = document.getElementById('kelas-select').value;
+  selectedForPayment.clear();
   if (!selectedKelas) {
     document.getElementById('student-list').innerHTML = '<div class="empty">← Pilih kelas di atas</div>';
     resetStats();
     return;
   }
-
   document.getElementById('student-list').innerHTML = '<div class="loading">⏳ Memuatkan...</div>';
-
-  // Detach old listeners
-  if (studentsListener) db.ref('pibgapp-students/' + selectedKelas).off();
-  if (paymentsListener) db.ref('pibgapp-payments').off();
-
-  // Load students (once)
+  if (paymentsListener) { db.ref('pibgapp-payments').off('value', paymentsListener); paymentsListener = null; }
   const sSnap = await db.ref('pibgapp-students/' + selectedKelas).once('value');
   students = {};
   if (sSnap.exists()) sSnap.forEach(c => { students[c.key] = c.val(); });
-
-  loadPayments(selectedKelas);
-}
-
-function getMonthKey() {
-  return `${curYear}-${String(curMonth+1).padStart(2,'0')}`;
+  loadPayments();
 }
 
 // ===== LOAD PAYMENTS (realtime) =====
-function loadPayments(kelas) {
-  if (paymentsListener) db.ref('pibgapp-payments').off('value', paymentsListener);
+function loadPayments() {
+  if (paymentsListener) { db.ref('pibgapp-payments').off('value', paymentsListener); paymentsListener = null; }
   const mk = getMonthKey();
   paymentsListener = db.ref('pibgapp-payments').on('value', snap => {
     payments = {};
     if (snap.exists()) {
-      snap.forEach(studentSnap => {
-        const monthData = studentSnap.child(mk).val();
-        if (monthData) payments[studentSnap.key] = monthData;
+      snap.forEach(sSnap => {
+        const md = sSnap.child(mk).val();
+        if (md) {
+          payments[sSnap.key] = md;
+          selectedForPayment.delete(sSnap.key); // already paid, remove from selection
+        }
       });
     }
     renderStudentList();
   });
 }
 
-// ===== RENDER STUDENTS =====
+// ===== RENDER =====
 function renderStudentList() {
-  const mk = getMonthKey();
-  const list = Object.entries(students).sort((a,b) => a[1].nama.localeCompare(b[1].nama));
-
+  const list = Object.entries(students).sort((a, b) => a[1].nama.localeCompare(b[1].nama));
   if (list.length === 0) {
     document.getElementById('student-list').innerHTML = '<div class="empty">Tiada murid dalam kelas ini</div>';
     resetStats();
@@ -374,75 +470,200 @@ function renderStudentList() {
 
   let bayarCount = 0;
   list.forEach(([k]) => { if (payments[k]) bayarCount++; });
-  const belumCount = list.length - bayarCount;
-
   document.getElementById('st-total').textContent = list.length;
   document.getElementById('st-bayar').textContent = bayarCount;
-  document.getElementById('st-belum').textContent = belumCount;
+  document.getElementById('st-belum').textContent = list.length - bayarCount;
   document.getElementById('st-rm').textContent = 'RM ' + (bayarCount * 5).toFixed(2);
 
-  document.getElementById('student-list').innerHTML = `
-    <div class="kelas-title">${selectedKelas} <span>${BULAN_NAMA[curMonth]} ${curYear}</span></div>
-    <div class="student-grid">
-      ${list.map(([key, s], i) => {
-        const paid = !!payments[key];
-        return `
-        <div class="student-row ${paid ? 'bayar' : ''}" onclick="openModal('${key}','${paid ? 'lihat' : 'rekod'}')">
-          <span class="s-no">${i+1}</span>
-          <div class="s-info">
-            <div class="s-nama">${s.nama}</div>
-            <div class="s-noic">${s.noic || '—'}</div>
-          </div>
-          <span class="s-badge ${paid ? 'badge-bayar' : 'badge-belum'}">${paid ? '✓ Bayar' : 'Belum'}</span>
-          <button class="s-action ${paid ? 'btn-lihat' : 'btn-rekod'}">${paid ? 'Resit' : 'Rekod'}</button>
-        </div>`;
-      }).join('')}
-    </div>`;
+  const rows = list.map(([key, s], i) => {
+    const paid = !!payments[key];
+    if (paid) {
+      const p = payments[key];
+      return `<div class="student-row paid" id="row-${key}">
+        <span class="s-no">${i + 1}</span>
+        <div class="s-info"><div class="s-nama">${s.nama}</div><div class="s-noic">${s.noic || '—'}</div></div>
+        <span class="s-badge badge-bayar">✓ Bayar</span>
+        ${isAdmin ? `<button class="btn-reset" onclick="adminReset('${key}')">Reset</button>` : ''}
+        <button class="s-action btn-lihat" onclick="openReceiptModal('${key}')">Resit</button>
+      </div>`;
+    } else {
+      const checked = selectedForPayment.has(key);
+      return `<div class="student-row unpaid${checked ? ' selected' : ''}" id="row-${key}" onclick="toggleCheck('${key}')">
+        <span class="s-no">${i + 1}</span>
+        <div class="s-info"><div class="s-nama">${s.nama}</div><div class="s-noic">${s.noic || '—'}</div></div>
+        <span class="s-badge badge-belum">Belum</span>
+        <div class="chk-wrapper"><div class="chk-box">${checked ? '✓' : ''}</div></div>
+      </div>`;
+    }
+  }).join('');
+
+  const selCount = selectedForPayment.size;
+  const bulkBar = `<div class="bulk-bar">
+    <div class="bulk-left">
+      <div class="bulk-info" id="bulk-info">${
+        selCount > 0
+          ? `<strong>${selCount}</strong> murid dipilih untuk bayaran`
+          : 'Tandakan murid yang telah membayar'
+      }</div>
+      ${selCount > 0 ? `<div class="bulk-rm">Jumlah: RM ${(selCount * 5).toFixed(2)}</div>` : ''}
+    </div>
+    <div class="bulk-right">
+      ${isAdmin && bayarCount > 0 ? `<button class="btn-padam-semua" onclick="adminPadamSemua()">🗑️ Padam Semua Rekod</button>` : ''}
+      <button class="btn-bulk-save" id="btn-bulk-save" ${selCount === 0 ? 'disabled' : ''} onclick="simpanBulk()">
+        ✓ Simpan &amp; Jana Resit Pukal
+      </button>
+    </div>
+  </div>`;
+
+  document.getElementById('student-list').innerHTML =
+    `<div class="kelas-title">${selectedKelas} <span>${BULAN_NAMA[curMonth]} ${curYear}</span></div>
+     <div class="student-grid">${rows}</div>
+     ${bulkBar}`;
 }
 
 function resetStats() {
   ['st-total','st-bayar','st-belum','st-rm'].forEach(id => document.getElementById(id).textContent = '—');
 }
 
-// ===== MODAL =====
-async function openModal(studentKey, mode) {
-  currentStudentKey = studentKey;
-  currentMode = mode;
+// ===== CHECKBOX =====
+function toggleCheck(key) {
+  if (payments[key]) return;
+  selectedForPayment.has(key) ? selectedForPayment.delete(key) : selectedForPayment.add(key);
+  const row = document.getElementById('row-' + key);
+  if (!row) return;
+  const checked = selectedForPayment.has(key);
+  row.classList.toggle('selected', checked);
+  const box = row.querySelector('.chk-box');
+  if (box) box.textContent = checked ? '✓' : '';
+  updateBulkBar();
+}
+
+function updateBulkBar() {
+  const count = selectedForPayment.size;
+  const infoEl = document.getElementById('bulk-info');
+  const saveBtn = document.getElementById('btn-bulk-save');
+  if (infoEl) infoEl.innerHTML = count > 0
+    ? `<strong>${count}</strong> murid dipilih untuk bayaran`
+    : 'Tandakan murid yang telah membayar';
+
+  const bulkLeft = document.querySelector('.bulk-left');
+  if (bulkLeft) {
+    let rmEl = bulkLeft.querySelector('.bulk-rm');
+    if (count > 0) {
+      if (!rmEl) { rmEl = document.createElement('div'); rmEl.className = 'bulk-rm'; bulkLeft.appendChild(rmEl); }
+      rmEl.textContent = `Jumlah: RM ${(count * 5).toFixed(2)}`;
+    } else if (rmEl) rmEl.remove();
+  }
+  if (saveBtn) saveBtn.disabled = count === 0;
+}
+
+// ===== BULK SAVE =====
+async function simpanBulk() {
+  const keys = [...selectedForPayment];
+  if (keys.length === 0) return;
+  if (!confirm(`Sahkan bayaran untuk ${keys.length} murid?\nJumlah: RM ${(keys.length * 5).toFixed(2)}`)) return;
+
+  const mk = getMonthKey();
+  const tarikh = new Date().toLocaleDateString('ms-MY', {day:'2-digit', month:'long', year:'numeric'});
+  const btn = document.getElementById('btn-bulk-save');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Menyimpan...'; }
+
+  try {
+    // Atomically reserve N consecutive receipt numbers
+    let startNo;
+    await db.ref('pibgapp-counter/lastResitNo').transaction(current => {
+      startNo = (current || 0) + 1;
+      return (current || 0) + keys.length;
+    });
+
+    const updates = {};
+    for (let i = 0; i < keys.length; i++) {
+      const key = keys[i];
+      const s = students[key];
+      const resitNo = `PIBG-SKSA-${curYear}-${String(startNo + i).padStart(4, '0')}`;
+      const payData = {
+        resitNo, tarikh,
+        nama: s.nama, noic: s.noic || '', kelas: s.kelas,
+        bulan: BULAN_NAMA[curMonth], tahun: curYear,
+        jumlah: 5, monthKey: mk
+      };
+      updates[`pibgapp-payments/${key}/${mk}`] = payData;
+      updates[`pibgapp-receipts/${resitNo}`] = payData;
+    }
+    await db.ref().update(updates);
+    selectedForPayment.clear();
+
+    const first = `PIBG-SKSA-${curYear}-${String(startNo).padStart(4,'0')}`;
+    const last  = `PIBG-SKSA-${curYear}-${String(startNo + keys.length - 1).padStart(4,'0')}`;
+    alert(`Berjaya! ${keys.length} rekod disimpan.\nNo. Resit: ${keys.length === 1 ? first : first + ' — ' + last}`);
+  } catch (e) {
+    alert('Ralat menyimpan: ' + e.message);
+    if (btn) { btn.disabled = false; btn.textContent = '✓ Simpan & Jana Resit Pukal'; }
+  }
+}
+
+// ===== ADMIN ACTIONS =====
+async function adminReset(studentKey) {
   const s = students[studentKey];
   const mk = getMonthKey();
+  const p = payments[studentKey];
+  if (!confirm(`Reset bayaran ${BULAN_NAMA[curMonth]} ${curYear} untuk:\n${s.nama}\n\nRekod akan dihapuskan.`)) return;
+  try {
+    const updates = {};
+    updates[`pibgapp-payments/${studentKey}/${mk}`] = null;
+    if (p && p.resitNo) updates[`pibgapp-receipts/${p.resitNo}`] = null;
+    await db.ref().update(updates);
+  } catch (e) { alert('Ralat: ' + e.message); }
+}
 
-  if (mode === 'rekod') {
-    // New payment
-    const resitNo = await generateResitNo();
-    const tarikh = new Date().toLocaleDateString('ms-MY', {day:'2-digit', month:'long', year:'numeric'});
-    fillReceipt(resitNo, s.nama, s.noic, s.kelas, BULAN_NAMA[curMonth] + ' ' + curYear, tarikh);
-    document.getElementById('modal-title').textContent = 'Rekod Bayaran Baru';
-    document.getElementById('modal-actions').innerHTML = `
-      <button class="btn-modal btn-batal" onclick="closeModal()">Batal</button>
-      <button class="btn-modal btn-rekod" onclick="simpanBayaran('${studentKey}','${resitNo}','${tarikh}')">✓ Simpan & Jana Resit</button>`;
-  } else {
-    // View existing
-    const p = payments[studentKey];
-    fillReceipt(p.resitNo, s.nama, s.noic, s.kelas, BULAN_NAMA[curMonth] + ' ' + curYear, p.tarikh);
-    document.getElementById('modal-title').textContent = 'Resit Bayaran';
-    const resitLink = window.location.href.split('?')[0] + '?resit=' + p.resitNo;
-    document.getElementById('modal-actions').innerHTML = `
-      <button class="btn-modal btn-batal" onclick="closeModal()">Tutup</button>
-      <button class="btn-modal btn-print" onclick="printResit('${p.resitNo}')">🖨️ Cetak</button>
-      <button class="btn-modal btn-salin" onclick="salinLink('${resitLink}')">🔗 Salin Link</button>
-      <button class="btn-modal btn-padam" onclick="padamBayaran('${studentKey}')">🗑️ Padam</button>`;
-  }
+async function adminPadamSemua() {
+  const mk = getMonthKey();
+  const paidList = Object.entries(payments);
+  if (paidList.length === 0) { alert('Tiada rekod untuk dipadam bagi bulan ini.'); return; }
+  if (!confirm(`AMARAN!\n\nPadam SEMUA ${paidList.length} rekod bayaran\nKelas: ${selectedKelas}\nBulan: ${BULAN_NAMA[curMonth]} ${curYear}\n\nTindakan ini TIDAK boleh dibatalkan!`)) return;
+  try {
+    const updates = {};
+    for (const [key, p] of paidList) {
+      updates[`pibgapp-payments/${key}/${mk}`] = null;
+      if (p.resitNo) updates[`pibgapp-receipts/${p.resitNo}`] = null;
+    }
+    await db.ref().update(updates);
+  } catch (e) { alert('Ralat: ' + e.message); }
+}
 
+// ===== RECEIPT MODAL =====
+function openReceiptModal(studentKey) {
+  currentStudentKey = studentKey;
+  const s = students[studentKey];
+  const p = payments[studentKey];
+  document.getElementById('r-no').textContent = p.resitNo;
+  document.getElementById('r-nama').textContent = p.nama;
+  document.getElementById('r-noic').textContent = p.noic || '—';
+  document.getElementById('r-kelas').textContent = p.kelas;
+  document.getElementById('r-bulan').textContent = `${BULAN_NAMA[curMonth]} ${curYear}`;
+  document.getElementById('r-tarikh').textContent = p.tarikh;
+  document.getElementById('modal-title').textContent = 'Resit Bayaran';
+  const resitLink = window.location.href.split('?')[0] + '?resit=' + p.resitNo;
+  document.getElementById('modal-actions').innerHTML = `
+    <button class="btn-modal btn-batal" onclick="closeModal()">Tutup</button>
+    <button class="btn-modal btn-print" onclick="printResit('${p.resitNo}')">🖨️ Cetak</button>
+    <button class="btn-modal btn-salin" onclick="salinLink('${resitLink}')">🔗 Salin Link</button>
+    ${isAdmin ? `<button class="btn-modal btn-padam" onclick="padamModal('${studentKey}')">🗑️ Padam</button>` : ''}`;
   document.getElementById('overlay').classList.add('show');
 }
 
-function fillReceipt(resitNo, nama, noic, kelas, bulan, tarikh) {
-  document.getElementById('r-no').textContent = resitNo;
-  document.getElementById('r-nama').textContent = nama;
-  document.getElementById('r-noic').textContent = noic || '—';
-  document.getElementById('r-kelas').textContent = kelas;
-  document.getElementById('r-bulan').textContent = bulan;
-  document.getElementById('r-tarikh').textContent = tarikh;
+async function padamModal(studentKey) {
+  const s = students[studentKey];
+  const mk = getMonthKey();
+  const p = payments[studentKey];
+  if (!confirm(`Padam rekod bayaran ${BULAN_NAMA[curMonth]} ${curYear} untuk ${s.nama}?`)) return;
+  try {
+    const updates = {};
+    updates[`pibgapp-payments/${studentKey}/${mk}`] = null;
+    if (p && p.resitNo) updates[`pibgapp-receipts/${p.resitNo}`] = null;
+    await db.ref().update(updates);
+    closeModal();
+  } catch (e) { alert('Ralat: ' + e.message); }
 }
 
 function closeModal() {
@@ -450,76 +671,20 @@ function closeModal() {
   currentStudentKey = null;
 }
 
-// ===== SAVE PAYMENT =====
-async function simpanBayaran(studentKey, resitNo, tarikh) {
-  const s = students[studentKey];
-  const mk = getMonthKey();
-  const payData = {
-    resitNo, tarikh,
-    nama: s.nama, noic: s.noic || '', kelas: s.kelas,
-    bulan: BULAN_NAMA[curMonth], tahun: curYear,
-    jumlah: 5, monthKey: mk
-  };
-
-  try {
-    await db.ref(`pibgapp-payments/${studentKey}/${mk}`).set(payData);
-    await db.ref(`pibgapp-receipts/${resitNo}`).set(payData);
-    await db.ref('pibgapp-counter/lastResitNo').set(parseInt(resitNo.split('-').pop()));
-
-    // Update modal to show view options
-    const resitLink = window.location.href.split('?')[0] + '?resit=' + resitNo;
-    document.getElementById('modal-title').textContent = 'Resit Berjaya Disimpan ✓';
-    document.getElementById('modal-actions').innerHTML = `
-      <button class="btn-modal btn-batal" onclick="closeModal()">Tutup</button>
-      <button class="btn-modal btn-print" onclick="printResit('${resitNo}')">🖨️ Cetak</button>
-      <button class="btn-modal btn-salin" onclick="salinLink('${resitLink}')">🔗 Salin Link</button>`;
-  } catch(e) {
-    alert('Ralat menyimpan: ' + e.message);
-  }
-}
-
-// ===== DELETE PAYMENT =====
-async function padamBayaran(studentKey) {
-  const s = students[studentKey];
-  const mk = getMonthKey();
-  if (!confirm(`Padam rekod bayaran ${BULAN_NAMA[curMonth]} ${curYear} untuk ${s.nama}?`)) return;
-  const p = payments[studentKey];
-  try {
-    await db.ref(`pibgapp-payments/${studentKey}/${mk}`).remove();
-    if (p && p.resitNo) await db.ref(`pibgapp-receipts/${p.resitNo}`).remove();
-    closeModal();
-  } catch(e) {
-    alert('Ralat: ' + e.message);
-  }
-}
-
-// ===== GENERATE RESIT NO =====
-async function generateResitNo() {
-  const snap = await db.ref('pibgapp-counter/lastResitNo').once('value');
-  const last = snap.exists() ? snap.val() : 0;
-  const next = last + 1;
-  return `PIBG-SKSA-${curYear}-${String(next).padStart(4,'0')}`;
-}
-
-// ===== PRINT =====
 function printResit(resitNo) {
   window.open(window.location.href.split('?')[0] + '?resit=' + resitNo, '_blank');
 }
 
-// ===== COPY LINK =====
 function salinLink(link) {
   navigator.clipboard.writeText(link).then(() => {
     alert('Link resit berjaya disalin!\n\n' + link + '\n\nBoleh hantar kepada ibu bapa via WhatsApp.');
-  }).catch(() => {
-    prompt('Salin link ini:', link);
-  });
+  }).catch(() => { prompt('Salin link ini:', link); });
 }
 
 // ===== RECEIPT PAGE =====
 async function showReceiptPage(resitNo) {
   document.getElementById('admin-app').style.display = 'none';
   document.getElementById('receipt-page').style.display = 'block';
-
   const snap = await db.ref('pibgapp-receipts/' + resitNo).once('value');
   if (!snap.exists()) {
     document.getElementById('rp-card').innerHTML = `
@@ -527,11 +692,10 @@ async function showReceiptPage(resitNo) {
         <div style="font-size:48px">❌</div>
         <div style="font-size:16px;font-weight:600;margin-top:12px">Resit tidak dijumpai</div>
         <div style="color:#888;font-size:13px;margin-top:6px">Nombor resit: ${resitNo}</div>
-        <a href="pibg_bayaran.html" style="display:inline-block;margin-top:16px;color:#1D9E75">← Kembali</a>
+        <a href="index.html" style="display:inline-block;margin-top:16px;color:#1D9E75">← Kembali</a>
       </div>`;
     return;
   }
-
   const p = snap.val();
   document.getElementById('rp-no').textContent = p.resitNo;
   document.getElementById('rp-rows').innerHTML = `
@@ -543,10 +707,8 @@ async function showReceiptPage(resitNo) {
     <div class="rp-row"><span class="rp-key">Jenis Bayaran</span><span class="rp-val">Yuran PIBG Bulanan</span></div>`;
 }
 
-// Close overlay on background click
-document.getElementById('overlay').addEventListener('click', function(e) {
-  if (e.target === this) closeModal();
-});
+document.getElementById('overlay').addEventListener('click', e => { if (e.target === document.getElementById('overlay')) closeModal(); });
+document.getElementById('admin-login-overlay').addEventListener('click', e => { if (e.target === document.getElementById('admin-login-overlay')) closeAdminLogin(); });
 </script>
 </body>
 </html>
