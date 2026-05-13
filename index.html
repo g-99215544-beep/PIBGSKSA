@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PIBG SK Sri Aman — Rekod Bayaran</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --green:#1D9E75;--green-dark:#0F6E56;--green-light:#E1F5EE;
+  --red:#E24B4A;--red-light:#FCEBEB;
+  --blue:#185FA5;--blue-light:#E6F1FB;
+  --gray:#888;--border:#e5e5e0;--bg:#f7f7f3;--card:#fff;
+  --text:#1a1a1a;--text2:#555;
+}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+
+/* ===== HEADER ===== */
+.header{background:var(--green);color:#fff;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,0.15)}
+.header-left{display:flex;align-items:center;gap:10px}
+.header-logo{font-size:22px}
+.header-title{font-size:15px;font-weight:600;line-height:1.2}
+.header-sub{font-size:11px;opacity:0.85}
+.header-right{font-size:12px;opacity:0.9;text-align:right}
+
+/* ===== CONTROLS ===== */
+.controls{background:var(--card);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.ctrl-label{font-size:12px;color:var(--text2);font-weight:500}
+select{padding:7px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;background:#fff;color:var(--text);cursor:pointer}
+select:focus{outline:none;border-color:var(--green)}
+.bulan-nav{display:flex;align-items:center;gap:6px}
+.nav-btn{background:none;border:1px solid var(--border);border-radius:6px;width:30px;height:30px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;color:var(--text2)}
+.nav-btn:hover{background:var(--green-light);border-color:var(--green);color:var(--green)}
+.bulan-text{font-size:14px;font-weight:600;min-width:130px;text-align:center}
+
+/* ===== STATS BAR ===== */
+.stats-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);border-bottom:1px solid var(--border)}
+.stat-item{background:var(--card);padding:10px 16px;text-align:center}
+.stat-num{font-size:20px;font-weight:700}
+.stat-num.green{color:var(--green)}
+.stat-num.red{color:var(--red)}
+.stat-num.blue{color:var(--blue)}
+.stat-label{font-size:11px;color:var(--text2);margin-top:1px}
+
+/* ===== STUDENT LIST ===== */
+.main{padding:16px 20px;max-width:900px;margin:0 auto}
+.kelas-title{font-size:13px;font-weight:600;color:var(--text2);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.kelas-title span{background:var(--green-light);color:var(--green-dark);padding:2px 10px;border-radius:20px;font-size:12px}
+
+.student-grid{display:flex;flex-direction:column;gap:6px}
+.student-row{background:var(--card);border:1px solid var(--border);border-radius:10px;display:flex;align-items:center;padding:10px 14px;gap:12px;cursor:pointer;transition:all 0.15s}
+.student-row:hover{border-color:var(--green);box-shadow:0 2px 8px rgba(29,158,117,0.12)}
+.student-row.bayar{background:#f0faf6;border-color:#9FE1CB}
+.student-row.bayar:hover{border-color:var(--green)}
+.s-no{font-size:13px;color:var(--gray);min-width:26px;font-weight:500}
+.s-info{flex:1}
+.s-nama{font-size:14px;font-weight:500}
+.s-noic{font-size:12px;color:var(--text2);margin-top:1px}
+.s-badge{padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;white-space:nowrap}
+.badge-bayar{background:var(--green-light);color:var(--green-dark)}
+.badge-belum{background:#f5f5f0;color:var(--gray)}
+.s-action{padding:6px 14px;border-radius:7px;border:none;font-size:13px;font-weight:600;cursor:pointer}
+.btn-rekod{background:var(--green);color:#fff}
+.btn-rekod:hover{background:var(--green-dark)}
+.btn-lihat{background:var(--green-light);color:var(--green-dark)}
+.btn-lihat:hover{background:#9FE1CB}
+
+.empty{text-align:center;padding:3rem;color:var(--text2)}
+.loading{text-align:center;padding:2rem;color:var(--text2);font-size:14px}
+
+/* ===== MODAL ===== */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;display:none;align-items:center;justify-content:center;padding:1rem}
+.overlay.show{display:flex}
+.modal{background:#fff;border-radius:16px;width:100%;max-width:460px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.3)}
+.modal-header{background:var(--green);color:#fff;padding:16px 20px;display:flex;justify-content:space-between;align-items:center}
+.modal-header h3{font-size:16px;font-weight:600}
+.close-btn{background:rgba(255,255,255,0.2);border:none;color:#fff;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center}
+.close-btn:hover{background:rgba(255,255,255,0.35)}
+.modal-body{padding:20px}
+
+/* ===== RECEIPT ===== */
+.receipt{border:2px dashed var(--border);border-radius:12px;padding:16px;margin-bottom:16px;position:relative}
+.receipt-header{text-align:center;margin-bottom:14px;padding-bottom:10px;border-bottom:1px dashed var(--border)}
+.receipt-school{font-size:13px;font-weight:700;color:var(--text)}
+.receipt-title{font-size:11px;color:var(--text2);margin-top:2px}
+.receipt-no{font-size:11px;color:var(--green-dark);font-weight:600;margin-top:6px;background:var(--green-light);padding:3px 10px;border-radius:20px;display:inline-block}
+.receipt-row{display:flex;justify-content:space-between;font-size:13px;padding:5px 0;border-bottom:1px solid #f0f0ec}
+.receipt-row:last-child{border-bottom:none}
+.receipt-key{color:var(--text2)}
+.receipt-val{font-weight:500;text-align:right;max-width:60%}
+.receipt-total{display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:10px;border-top:2px solid var(--green-light)}
+.total-label{font-size:13px;font-weight:600}
+.total-amount{font-size:22px;font-weight:700;color:var(--green)}
+.receipt-stamp{position:absolute;top:14px;right:14px;background:var(--green);color:#fff;font-size:10px;font-weight:700;padding:4px 8px;border-radius:6px;transform:rotate(10deg);opacity:0.85}
+
+.modal-actions{display:flex;gap:8px;flex-wrap:wrap}
+.btn-modal{flex:1;padding:10px;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;min-width:100px}
+.btn-print{background:var(--blue-light);color:var(--blue)}
+.btn-print:hover{background:#B5D4F4}
+.btn-salin{background:var(--green-light);color:var(--green-dark)}
+.btn-salin:hover{background:#9FE1CB}
+.btn-batal{background:#f5f5f0;color:var(--gray)}
+.btn-batal:hover{background:#e8e8e3}
+.btn-padam{background:var(--red-light);color:var(--red)}
+.btn-padam:hover{background:#F7C1C1}
+
+/* ===== RECEIPT PAGE (standalone) ===== */
+#receipt-page{display:none;min-height:100vh;background:var(--bg);padding:2rem}
+.receipt-page-inner{max-width:420px;margin:0 auto}
+.receipt-page-card{background:#fff;border-radius:16px;padding:24px;box-shadow:0 4px 20px rgba(0,0,0,0.1)}
+.rp-logo{text-align:center;margin-bottom:16px}
+.rp-logo img{width:60px;height:60px;object-fit:contain}
+.rp-school{font-size:16px;font-weight:700;text-align:center;color:var(--green-dark)}
+.rp-sub{font-size:12px;color:var(--text2);text-align:center;margin-bottom:16px}
+.rp-divider{border:none;border-top:2px dashed var(--border);margin:14px 0}
+.rp-resit-no{text-align:center;margin-bottom:14px}
+.rp-resit-badge{background:var(--green-light);color:var(--green-dark);font-size:13px;font-weight:700;padding:6px 16px;border-radius:20px;display:inline-block}
+.rp-row{display:flex;justify-content:space-between;font-size:14px;padding:7px 0;border-bottom:1px solid #f0f0ec}
+.rp-row:last-child{border-bottom:none}
+.rp-key{color:var(--text2)}
+.rp-val{font-weight:600;text-align:right;max-width:65%}
+.rp-total-box{background:var(--green-light);border-radius:10px;padding:14px;text-align:center;margin:14px 0}
+.rp-total-label{font-size:12px;color:var(--green-dark)}
+.rp-total-amount{font-size:32px;font-weight:700;color:var(--green)}
+.rp-footer{text-align:center;font-size:11px;color:var(--text2);margin-top:14px;line-height:1.6}
+.rp-print-btn{display:block;width:100%;margin-top:16px;padding:12px;background:var(--green);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer}
+.rp-print-btn:hover{background:var(--green-dark)}
+.rp-back-btn{display:block;width:100%;margin-top:8px;padding:10px;background:none;color:var(--green);border:1px solid var(--green);border-radius:10px;font-size:14px;cursor:pointer;text-align:center;text-decoration:none}
+
+/* ===== PRINT ===== */
+@media print{
+  body *{visibility:hidden}
+  .receipt-page-card, .receipt-page-card *{visibility:visible}
+  .receipt-page-card{position:fixed;left:50%;top:0;transform:translateX(-50%);width:360px;box-shadow:none;border:1px solid #ccc}
+  .rp-print-btn,.rp-back-btn{display:none}
+}
+</style>
+</head>
+<body>
+
+<!-- ===== ADMIN APP ===== -->
+<div id="admin-app">
+  <div class="header">
+    <div class="header-left">
+      <span class="header-logo">🏫</span>
+      <div>
+        <div class="header-title">PIBG SK Sri Aman</div>
+        <div class="header-sub">Sistem Rekod Bayaran Bulanan</div>
+      </div>
+    </div>
+    <div class="header-right" id="header-date"></div>
+  </div>
+
+  <div class="controls">
+    <div>
+      <div class="ctrl-label">KELAS</div>
+      <select id="kelas-select" onchange="loadStudents()">
+        <option value="">— Pilih Kelas —</option>
+      </select>
+    </div>
+    <div>
+      <div class="ctrl-label">BULAN / TAHUN</div>
+      <div class="bulan-nav">
+        <button class="nav-btn" onclick="changeBulan(-1)">‹</button>
+        <div class="bulan-text" id="bulan-text">—</div>
+        <button class="nav-btn" onclick="changeBulan(1)">›</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="stats-bar">
+    <div class="stat-item"><div class="stat-num" id="st-total">—</div><div class="stat-label">Jumlah</div></div>
+    <div class="stat-item"><div class="stat-num green" id="st-bayar">—</div><div class="stat-label">Dah Bayar</div></div>
+    <div class="stat-item"><div class="stat-num red" id="st-belum">—</div><div class="stat-label">Belum Bayar</div></div>
+    <div class="stat-item"><div class="stat-num blue" id="st-rm">—</div><div class="stat-label">Jumlah RM</div></div>
+  </div>
+
+  <div class="main">
+    <div id="student-list"><div class="empty">← Pilih kelas di atas</div></div>
+  </div>
+</div>
+
+<!-- ===== RECEIPT PAGE (standalone) ===== -->
+<div id="receipt-page">
+  <div class="receipt-page-inner">
+    <div class="receipt-page-card" id="rp-card">
+      <div class="rp-logo">
+        <div style="width:60px;height:60px;background:var(--green-light);border-radius:50%;margin:0 auto;display:flex;align-items:center;justify-content:center;font-size:28px">🏫</div>
+      </div>
+      <div class="rp-school">PERSATUAN IBU BAPA DAN GURU</div>
+      <div class="rp-sub">Sekolah Kebangsaan Sri Aman, Ayer Itam, Pulau Pinang</div>
+      <hr class="rp-divider">
+      <div class="rp-resit-no"><span class="rp-resit-badge" id="rp-no">—</span></div>
+      <div id="rp-rows"></div>
+      <div class="rp-total-box">
+        <div class="rp-total-label">JUMLAH BAYARAN</div>
+        <div class="rp-total-amount">RM 5.00</div>
+      </div>
+      <hr class="rp-divider">
+      <div class="rp-footer">
+        Resit ini adalah bukti bayaran sah PIBG SK Sri Aman.<br>
+        Bayaran: RM5.00 sebulan / murid<br>
+        Terima kasih atas kerjasama anda.
+      </div>
+      <button class="rp-print-btn" onclick="window.print()">🖨️ Cetak / Simpan PDF</button>
+      <a href="pibg_bayaran.html" class="rp-back-btn">← Kembali ke Sistem Rekod</a>
+    </div>
+  </div>
+</div>
+
+<!-- ===== PAYMENT MODAL ===== -->
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-title">Rekod Bayaran</h3>
+      <button class="close-btn" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="receipt" id="modal-receipt">
+        <div class="receipt-stamp">BAYAR</div>
+        <div class="receipt-header">
+          <div class="receipt-school">PIBG SK SRI AMAN</div>
+          <div class="receipt-title">Resit Bayaran PIBG Bulanan</div>
+          <div class="receipt-no" id="r-no">—</div>
+        </div>
+        <div class="receipt-row"><span class="receipt-key">Nama Murid</span><span class="receipt-val" id="r-nama">—</span></div>
+        <div class="receipt-row"><span class="receipt-key">No. IC</span><span class="receipt-val" id="r-noic">—</span></div>
+        <div class="receipt-row"><span class="receipt-key">Kelas</span><span class="receipt-val" id="r-kelas">—</span></div>
+        <div class="receipt-row"><span class="receipt-key">Bulan</span><span class="receipt-val" id="r-bulan">—</span></div>
+        <div class="receipt-row"><span class="receipt-key">Tarikh</span><span class="receipt-val" id="r-tarikh">—</span></div>
+        <div class="receipt-total">
+          <span class="total-label">Jumlah Bayaran</span>
+          <span class="total-amount">RM 5.00</span>
+        </div>
+      </div>
+      <div class="modal-actions" id="modal-actions"></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+<script>
+// ===== FIREBASE =====
+firebase.initializeApp({
+  apiKey: "AIzaSyBSWbXoKgQt1E8xvJa9zaKyw3e9V_EMxAE",
+  authDomain: "sk-sri-aman-database.firebaseapp.com",
+  databaseURL: "https://sk-sri-aman-database-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "sk-sri-aman-database",
+  storageBucket: "sk-sri-aman-database.appspot.com",
+  messagingSenderId: "810640165554",
+  appId: "1:810640165554:web:b3ad2dc6f1583ec2a657ab"
+});
+const db = firebase.database();
+
+// ===== STATE =====
+const BULAN_NAMA = ['Januari','Februari','Mac','April','Mei','Jun','Julai','Ogos','September','Oktober','November','Disember'];
+let curDate = new Date();
+let curYear = curDate.getFullYear();
+let curMonth = curDate.getMonth(); // 0-indexed
+let students = {}; // {key: {nama, noic, kelas}}
+let payments = {}; // {studentKey: {resitNo, tarikh, ...}}
+let currentStudentKey = null;
+let currentMode = null; // 'rekod' or 'lihat'
+let studentsListener = null;
+let paymentsListener = null;
+let selectedKelas = '';
+
+// ===== INIT =====
+window.addEventListener('DOMContentLoaded', async () => {
+  const params = new URLSearchParams(window.location.search);
+  const resitParam = params.get('resit');
+  if (resitParam) {
+    showReceiptPage(resitParam);
+    return;
+  }
+  initAdmin();
+});
+
+function initAdmin() {
+  updateHeaderDate();
+  updateBulanText();
+  loadKelasOptions();
+}
+
+function updateHeaderDate() {
+  const now = new Date();
+  document.getElementById('header-date').innerHTML =
+    now.toLocaleDateString('ms-MY', {weekday:'short', day:'numeric', month:'short', year:'numeric'}) +
+    '<br>' + now.toLocaleTimeString('ms-MY', {hour:'2-digit', minute:'2-digit'});
+}
+
+function updateBulanText() {
+  document.getElementById('bulan-text').textContent = BULAN_NAMA[curMonth] + ' ' + curYear;
+}
+
+function changeBulan(dir) {
+  curMonth += dir;
+  if (curMonth > 11) { curMonth = 0; curYear++; }
+  if (curMonth < 0) { curMonth = 11; curYear--; }
+  updateBulanText();
+  if (selectedKelas) loadPayments(selectedKelas);
+}
+
+// ===== LOAD KELAS OPTIONS =====
+async function loadKelasOptions() {
+  const snap = await db.ref('pibgapp-students').once('value');
+  const sel = document.getElementById('kelas-select');
+  if (!snap.exists()) { sel.innerHTML = '<option>Tiada data</option>'; return; }
+
+  const klases = Object.keys(snap.val()).sort((a,b) => {
+    const order = ['PRASEKOLAH','TAHUN 1','TAHUN 2','TAHUN 3','TAHUN 4','TAHUN 5','TAHUN 6'];
+    const getOrder = k => { for(let i=0;i<order.length;i++) if(k.startsWith(order[i])) return i+'_'+k; return '9_'+k; };
+    return getOrder(a).localeCompare(getOrder(b));
+  });
+
+  sel.innerHTML = '<option value="">— Pilih Kelas —</option>' +
+    klases.map(k => `<option value="${k}">${k}</option>`).join('');
+}
+
+// ===== LOAD STUDENTS =====
+async function loadStudents() {
+  selectedKelas = document.getElementById('kelas-select').value;
+  if (!selectedKelas) {
+    document.getElementById('student-list').innerHTML = '<div class="empty">← Pilih kelas di atas</div>';
+    resetStats();
+    return;
+  }
+
+  document.getElementById('student-list').innerHTML = '<div class="loading">⏳ Memuatkan...</div>';
+
+  // Detach old listeners
+  if (studentsListener) db.ref('pibgapp-students/' + selectedKelas).off();
+  if (paymentsListener) db.ref('pibgapp-payments').off();
+
+  // Load students (once)
+  const sSnap = await db.ref('pibgapp-students/' + selectedKelas).once('value');
+  students = {};
+  if (sSnap.exists()) sSnap.forEach(c => { students[c.key] = c.val(); });
+
+  loadPayments(selectedKelas);
+}
+
+function getMonthKey() {
+  return `${curYear}-${String(curMonth+1).padStart(2,'0')}`;
+}
+
+// ===== LOAD PAYMENTS (realtime) =====
+function loadPayments(kelas) {
+  if (paymentsListener) db.ref('pibgapp-payments').off('value', paymentsListener);
+  const mk = getMonthKey();
+  paymentsListener = db.ref('pibgapp-payments').on('value', snap => {
+    payments = {};
+    if (snap.exists()) {
+      snap.forEach(studentSnap => {
+        const monthData = studentSnap.child(mk).val();
+        if (monthData) payments[studentSnap.key] = monthData;
+      });
+    }
+    renderStudentList();
+  });
+}
+
+// ===== RENDER STUDENTS =====
+function renderStudentList() {
+  const mk = getMonthKey();
+  const list = Object.entries(students).sort((a,b) => a[1].nama.localeCompare(b[1].nama));
+
+  if (list.length === 0) {
+    document.getElementById('student-list').innerHTML = '<div class="empty">Tiada murid dalam kelas ini</div>';
+    resetStats();
+    return;
+  }
+
+  let bayarCount = 0;
+  list.forEach(([k]) => { if (payments[k]) bayarCount++; });
+  const belumCount = list.length - bayarCount;
+
+  document.getElementById('st-total').textContent = list.length;
+  document.getElementById('st-bayar').textContent = bayarCount;
+  document.getElementById('st-belum').textContent = belumCount;
+  document.getElementById('st-rm').textContent = 'RM ' + (bayarCount * 5).toFixed(2);
+
+  document.getElementById('student-list').innerHTML = `
+    <div class="kelas-title">${selectedKelas} <span>${BULAN_NAMA[curMonth]} ${curYear}</span></div>
+    <div class="student-grid">
+      ${list.map(([key, s], i) => {
+        const paid = !!payments[key];
+        return `
+        <div class="student-row ${paid ? 'bayar' : ''}" onclick="openModal('${key}','${paid ? 'lihat' : 'rekod'}')">
+          <span class="s-no">${i+1}</span>
+          <div class="s-info">
+            <div class="s-nama">${s.nama}</div>
+            <div class="s-noic">${s.noic || '—'}</div>
+          </div>
+          <span class="s-badge ${paid ? 'badge-bayar' : 'badge-belum'}">${paid ? '✓ Bayar' : 'Belum'}</span>
+          <button class="s-action ${paid ? 'btn-lihat' : 'btn-rekod'}">${paid ? 'Resit' : 'Rekod'}</button>
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+function resetStats() {
+  ['st-total','st-bayar','st-belum','st-rm'].forEach(id => document.getElementById(id).textContent = '—');
+}
+
+// ===== MODAL =====
+async function openModal(studentKey, mode) {
+  currentStudentKey = studentKey;
+  currentMode = mode;
+  const s = students[studentKey];
+  const mk = getMonthKey();
+
+  if (mode === 'rekod') {
+    // New payment
+    const resitNo = await generateResitNo();
+    const tarikh = new Date().toLocaleDateString('ms-MY', {day:'2-digit', month:'long', year:'numeric'});
+    fillReceipt(resitNo, s.nama, s.noic, s.kelas, BULAN_NAMA[curMonth] + ' ' + curYear, tarikh);
+    document.getElementById('modal-title').textContent = 'Rekod Bayaran Baru';
+    document.getElementById('modal-actions').innerHTML = `
+      <button class="btn-modal btn-batal" onclick="closeModal()">Batal</button>
+      <button class="btn-modal btn-rekod" onclick="simpanBayaran('${studentKey}','${resitNo}','${tarikh}')">✓ Simpan & Jana Resit</button>`;
+  } else {
+    // View existing
+    const p = payments[studentKey];
+    fillReceipt(p.resitNo, s.nama, s.noic, s.kelas, BULAN_NAMA[curMonth] + ' ' + curYear, p.tarikh);
+    document.getElementById('modal-title').textContent = 'Resit Bayaran';
+    const resitLink = window.location.href.split('?')[0] + '?resit=' + p.resitNo;
+    document.getElementById('modal-actions').innerHTML = `
+      <button class="btn-modal btn-batal" onclick="closeModal()">Tutup</button>
+      <button class="btn-modal btn-print" onclick="printResit('${p.resitNo}')">🖨️ Cetak</button>
+      <button class="btn-modal btn-salin" onclick="salinLink('${resitLink}')">🔗 Salin Link</button>
+      <button class="btn-modal btn-padam" onclick="padamBayaran('${studentKey}')">🗑️ Padam</button>`;
+  }
+
+  document.getElementById('overlay').classList.add('show');
+}
+
+function fillReceipt(resitNo, nama, noic, kelas, bulan, tarikh) {
+  document.getElementById('r-no').textContent = resitNo;
+  document.getElementById('r-nama').textContent = nama;
+  document.getElementById('r-noic').textContent = noic || '—';
+  document.getElementById('r-kelas').textContent = kelas;
+  document.getElementById('r-bulan').textContent = bulan;
+  document.getElementById('r-tarikh').textContent = tarikh;
+}
+
+function closeModal() {
+  document.getElementById('overlay').classList.remove('show');
+  currentStudentKey = null;
+}
+
+// ===== SAVE PAYMENT =====
+async function simpanBayaran(studentKey, resitNo, tarikh) {
+  const s = students[studentKey];
+  const mk = getMonthKey();
+  const payData = {
+    resitNo, tarikh,
+    nama: s.nama, noic: s.noic || '', kelas: s.kelas,
+    bulan: BULAN_NAMA[curMonth], tahun: curYear,
+    jumlah: 5, monthKey: mk
+  };
+
+  try {
+    await db.ref(`pibgapp-payments/${studentKey}/${mk}`).set(payData);
+    await db.ref(`pibgapp-receipts/${resitNo}`).set(payData);
+    await db.ref('pibgapp-counter/lastResitNo').set(parseInt(resitNo.split('-').pop()));
+
+    // Update modal to show view options
+    const resitLink = window.location.href.split('?')[0] + '?resit=' + resitNo;
+    document.getElementById('modal-title').textContent = 'Resit Berjaya Disimpan ✓';
+    document.getElementById('modal-actions').innerHTML = `
+      <button class="btn-modal btn-batal" onclick="closeModal()">Tutup</button>
+      <button class="btn-modal btn-print" onclick="printResit('${resitNo}')">🖨️ Cetak</button>
+      <button class="btn-modal btn-salin" onclick="salinLink('${resitLink}')">🔗 Salin Link</button>`;
+  } catch(e) {
+    alert('Ralat menyimpan: ' + e.message);
+  }
+}
+
+// ===== DELETE PAYMENT =====
+async function padamBayaran(studentKey) {
+  const s = students[studentKey];
+  const mk = getMonthKey();
+  if (!confirm(`Padam rekod bayaran ${BULAN_NAMA[curMonth]} ${curYear} untuk ${s.nama}?`)) return;
+  const p = payments[studentKey];
+  try {
+    await db.ref(`pibgapp-payments/${studentKey}/${mk}`).remove();
+    if (p && p.resitNo) await db.ref(`pibgapp-receipts/${p.resitNo}`).remove();
+    closeModal();
+  } catch(e) {
+    alert('Ralat: ' + e.message);
+  }
+}
+
+// ===== GENERATE RESIT NO =====
+async function generateResitNo() {
+  const snap = await db.ref('pibgapp-counter/lastResitNo').once('value');
+  const last = snap.exists() ? snap.val() : 0;
+  const next = last + 1;
+  return `PIBG-SKSA-${curYear}-${String(next).padStart(4,'0')}`;
+}
+
+// ===== PRINT =====
+function printResit(resitNo) {
+  window.open(window.location.href.split('?')[0] + '?resit=' + resitNo, '_blank');
+}
+
+// ===== COPY LINK =====
+function salinLink(link) {
+  navigator.clipboard.writeText(link).then(() => {
+    alert('Link resit berjaya disalin!\n\n' + link + '\n\nBoleh hantar kepada ibu bapa via WhatsApp.');
+  }).catch(() => {
+    prompt('Salin link ini:', link);
+  });
+}
+
+// ===== RECEIPT PAGE =====
+async function showReceiptPage(resitNo) {
+  document.getElementById('admin-app').style.display = 'none';
+  document.getElementById('receipt-page').style.display = 'block';
+
+  const snap = await db.ref('pibgapp-receipts/' + resitNo).once('value');
+  if (!snap.exists()) {
+    document.getElementById('rp-card').innerHTML = `
+      <div style="text-align:center;padding:2rem">
+        <div style="font-size:48px">❌</div>
+        <div style="font-size:16px;font-weight:600;margin-top:12px">Resit tidak dijumpai</div>
+        <div style="color:#888;font-size:13px;margin-top:6px">Nombor resit: ${resitNo}</div>
+        <a href="pibg_bayaran.html" style="display:inline-block;margin-top:16px;color:#1D9E75">← Kembali</a>
+      </div>`;
+    return;
+  }
+
+  const p = snap.val();
+  document.getElementById('rp-no').textContent = p.resitNo;
+  document.getElementById('rp-rows').innerHTML = `
+    <div class="rp-row"><span class="rp-key">Nama Murid</span><span class="rp-val">${p.nama}</span></div>
+    <div class="rp-row"><span class="rp-key">No. IC / Pengenalan</span><span class="rp-val">${p.noic || '—'}</span></div>
+    <div class="rp-row"><span class="rp-key">Kelas</span><span class="rp-val">${p.kelas}</span></div>
+    <div class="rp-row"><span class="rp-key">Bulan Bayaran</span><span class="rp-val">${p.bulan} ${p.tahun}</span></div>
+    <div class="rp-row"><span class="rp-key">Tarikh Bayar</span><span class="rp-val">${p.tarikh}</span></div>
+    <div class="rp-row"><span class="rp-key">Jenis Bayaran</span><span class="rp-val">Yuran PIBG Bulanan</span></div>`;
+}
+
+// Close overlay on background click
+document.getElementById('overlay').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+</script>
+</body>
+</html>
