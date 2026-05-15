@@ -301,31 +301,47 @@ function renderMonths() {
   const year = parseInt(document.getElementById('year-select').value, 10);
   document.getElementById('month-title').textContent = `Status Sumbangan ${year}`;
 
-  let paidCount = 0, totalRM = 0;
-  const rows = BULAN_NAMA.map((bulan, idx) => {
+  // Untuk 2026: mula dari Mei sahaja. Hanya tunjukkan bulan-bulan
+  // berikutnya jika murid telah membayar lebih (RM5 = 1 bulan).
+  let startIdx = 0, endIdx = 11;
+  if (year === 2026) {
+    startIdx = 4; // Mei
+    let lastPaidIdx = -1;
+    for (let i = 0; i < 12; i++) {
+      const mk = `${year}-${String(i + 1).padStart(2, '0')}`;
+      if (studentPayments[mk]) lastPaidIdx = i;
+    }
+    endIdx = Math.max(startIdx, lastPaidIdx);
+  }
+
+  let paidCount = 0, totalRM = 0, rows = '';
+  for (let idx = startIdx; idx <= endIdx; idx++) {
+    const bulan = BULAN_NAMA[idx];
     const mk = `${year}-${String(idx + 1).padStart(2, '0')}`;
     const p = studentPayments[mk];
     if (p) {
       paidCount++;
       totalRM += 5; // setiap bulan kira RM5 untuk paparan
-      return `<div class="month-row paid" onclick="openReceipt('${p.resitNo}')">
+      rows += `<div class="month-row paid" onclick="openReceipt('${p.resitNo}')">
         <span class="m-num">${idx + 1}</span>
         <span class="m-name">${bulan}</span>
         <span class="m-badge badge-bayar">✓ Bayar</span>
         <button class="m-action" onclick="event.stopPropagation();openReceipt('${p.resitNo}')">Resit</button>
       </div>`;
+    } else {
+      rows += `<div class="month-row">
+        <span class="m-num">${idx + 1}</span>
+        <span class="m-name">${bulan}</span>
+        <span class="m-badge badge-belum">Belum</span>
+      </div>`;
     }
-    return `<div class="month-row">
-      <span class="m-num">${idx + 1}</span>
-      <span class="m-name">${bulan}</span>
-      <span class="m-badge badge-belum">Belum</span>
-    </div>`;
-  }).join('');
+  }
 
+  const totalShown = endIdx - startIdx + 1;
   document.getElementById('month-list').innerHTML = rows;
   document.getElementById('stats-bar').innerHTML = `
     <div class="stat-pill"><div class="stat-num green">${paidCount}</div><div class="stat-label">DIBAYAR</div></div>
-    <div class="stat-pill"><div class="stat-num red">${12 - paidCount}</div><div class="stat-label">BELUM</div></div>
+    <div class="stat-pill"><div class="stat-num red">${totalShown - paidCount}</div><div class="stat-label">BELUM</div></div>
     <div class="stat-pill"><div class="stat-num blue">RM ${totalRM}</div><div class="stat-label">JUMLAH</div></div>`;
 }
 
