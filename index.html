@@ -90,6 +90,24 @@ select:focus{outline:none;border-color:var(--green)}
 .btn-padam-semua{padding:9px 14px;background:var(--red-light);color:var(--red);border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer}
 .btn-padam-semua:hover{background:#f7c1c1}
 
+/* PENDING TICK (ditanda, belum jana resit) */
+.student-row.pending-tick{background:#eff6ff;border-color:#93c5fd;cursor:pointer}
+.student-row.pending-tick:hover{border-color:#3b82f6;box-shadow:0 2px 8px rgba(59,130,246,0.15)}
+.badge-pending{background:#dbeafe;color:#1d4ed8}
+.chk-box.checked{border-color:#3b82f6;background:#3b82f6;color:#fff}
+
+/* JANA RESIT + EDIT BUTTONS */
+.btn-generate-resit{background:var(--green);color:#fff;border:none;border-radius:9px;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px}
+.btn-generate-resit:hover{background:var(--green-dark)}
+.btn-generate-resit .gen-count{background:rgba(255,255,255,0.25);padding:1px 8px;border-radius:20px;font-size:11px}
+.btn-edit-toggle{padding:3px 12px;border-radius:20px;border:1px solid var(--border);background:#fff;font-size:12px;font-weight:600;cursor:pointer;color:var(--text2);line-height:1.8}
+.btn-edit-toggle.active{background:#fef2f2;border-color:#fca5a5;color:var(--red)}
+.btn-padam-baris{background:var(--red-light);color:var(--red);padding:6px 10px;border-radius:7px;border:none;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0}
+.btn-padam-baris:hover{background:#f7c1c1}
+.generate-footer{margin-top:12px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.footer-left{display:flex;gap:8px;align-items:center}
+.footer-right{display:flex;gap:8px;align-items:center}
+
 /* VIEW TOGGLE */
 .view-toggle{display:flex;gap:4px}
 .vt-btn{padding:6px 16px;border:1px solid var(--border);border-radius:8px;background:#fff;font-size:13px;font-weight:500;cursor:pointer;color:var(--text2);white-space:nowrap}
@@ -383,6 +401,8 @@ let paymentsListener = null;
 let selectedKelas = '';
 let isAdmin = false;
 let viewMode = 'bulanan';
+let bulananPending = new Set();
+let isEditMode = false;
 
 // ===== INIT =====
 window.addEventListener('DOMContentLoaded', () => {
@@ -499,6 +519,8 @@ async function loadStudents() {
 // ===== LOAD PAYMENTS (realtime) =====
 function loadPayments() {
   if (paymentsListener) { db.ref('pibgapp-payments').off('value', paymentsListener); paymentsListener = null; }
+  bulananPending = new Set();
+  isEditMode = false;
   const mk = getMonthKey();
   paymentsListener = db.ref('pibgapp-payments').on('value', snap => {
     payments = {};
@@ -536,70 +558,130 @@ function renderStudentList() {
         <span class="s-no">${i + 1}</span>
         <div class="s-info"><div class="s-nama">${s.nama}</div><div class="s-noic">${s.noic || '—'}</div></div>
         <span class="s-badge badge-bayar">✓ Bayar</span>
-        ${isAdmin ? `<button class="btn-reset" onclick="adminReset('${key}')">Reset</button>` : ''}
+        ${isAdmin && !isEditMode ? `<button class="btn-reset" onclick="adminReset('${key}')">Reset</button>` : ''}
+        ${isEditMode ? `<button class="btn-padam-baris" onclick="padamPembayaran('${key}')">Padam</button>` : ''}
         <button class="s-action btn-lihat" onclick="openReceiptModal('${key}')">Resit</button>
       </div>`;
     } else {
-      return `<div class="student-row unpaid" id="row-${key}" onclick="toggleCheck('${key}')">
-        <span class="s-no">${i + 1}</span>
-        <div class="s-info"><div class="s-nama">${s.nama}</div><div class="s-noic">${s.noic || '—'}</div></div>
-        <span class="s-badge badge-belum">Belum</span>
-        <div class="chk-wrapper"><div class="chk-box"></div></div>
-      </div>`;
+      const isPending = bulananPending.has(key);
+      if (isPending) {
+        return `<div class="student-row pending-tick" id="row-${key}" onclick="toggleCheck('${key}')">
+          <span class="s-no">${i + 1}</span>
+          <div class="s-info"><div class="s-nama">${s.nama}</div><div class="s-noic">${s.noic || '—'}</div></div>
+          <span class="s-badge badge-pending">Ditanda</span>
+          <div class="chk-wrapper"><div class="chk-box checked">✓</div></div>
+        </div>`;
+      } else {
+        return `<div class="student-row unpaid" id="row-${key}" onclick="toggleCheck('${key}')">
+          <span class="s-no">${i + 1}</span>
+          <div class="s-info"><div class="s-nama">${s.nama}</div><div class="s-noic">${s.noic || '—'}</div></div>
+          <span class="s-badge badge-belum">Belum</span>
+          <div class="chk-wrapper"><div class="chk-box"></div></div>
+        </div>`;
+      }
     }
   }).join('');
 
-  const adminFooter = isAdmin && bayarCount > 0
-    ? `<div class="admin-footer"><button class="btn-padam-semua" onclick="adminPadamSemua()">🗑️ Padam Semua Rekod</button></div>`
+  const pendingCount = bulananPending.size;
+  const footerLeft = isAdmin
+    ? `<div class="footer-left">
+        <button class="btn-edit-toggle ${isEditMode ? 'active' : ''}" onclick="toggleEditMode()">${isEditMode ? '✓ Selesai Edit' : 'Edit'}</button>
+        ${bayarCount > 0 && !isEditMode ? `<button class="btn-padam-semua" onclick="adminPadamSemua()">🗑️ Padam Semua</button>` : ''}
+      </div>`
+    : '<div class="footer-left"></div>';
+  const footerRight = pendingCount > 0
+    ? `<div class="footer-right"><button class="btn-generate-resit" onclick="generateResitBulanan()">Jana Resit <span class="gen-count">${pendingCount} murid</span></button></div>`
+    : '<div class="footer-right"></div>';
+  const footer = (isAdmin || pendingCount > 0)
+    ? `<div class="generate-footer">${footerLeft}${footerRight}</div>`
     : '';
 
   document.getElementById('student-list').innerHTML =
     `<div class="kelas-title">${selectedKelas} <span>${BULAN_NAMA[curMonth]} ${curYear}</span></div>
      <div class="student-grid">${rows}</div>
-     ${adminFooter}`;
+     ${footer}`;
 }
 
 function resetStats() {
   ['st-total','st-bayar','st-belum','st-rm'].forEach(id => document.getElementById(id).textContent = '—');
 }
 
-// ===== AUTO-SAVE ON TICK =====
-async function toggleCheck(key) {
+// ===== TICK / UNTICK (lokal sahaja, tiada simpan ke Firebase) =====
+function toggleCheck(key) {
   if (payments[key]) return;
-  const row = document.getElementById('row-' + key);
-  if (!row || row.classList.contains('saving')) return;
+  if (bulananPending.has(key)) {
+    bulananPending.delete(key);
+  } else {
+    bulananPending.add(key);
+  }
+  renderStudentList();
+}
 
-  row.classList.add('saving');
-  const box = row.querySelector('.chk-box');
-  if (box) box.textContent = '…';
+// ===== JANA RESIT UNTUK SEMUA YANG DITANDA =====
+async function generateResitBulanan() {
+  const keys = [...bulananPending];
+  if (keys.length === 0) return;
+  if (!confirm(`Jana resit untuk ${keys.length} murid?\n\nBulan: ${BULAN_NAMA[curMonth]} ${curYear}\nJumlah: RM ${(keys.length * 5).toFixed(2)}`)) return;
 
-  const s = students[key];
   const mk = getMonthKey();
   const tarikh = new Date().toLocaleDateString('ms-MY', {day:'2-digit', month:'long', year:'numeric'});
 
+  keys.forEach(key => {
+    const row = document.getElementById('row-' + key);
+    if (row) row.classList.add('saving');
+  });
+
   try {
-    let resitNo;
+    let startNum;
     await db.ref('pibgapp-counter/lastResitNo').transaction(current => {
-      const next = (current || 0) + 1;
-      resitNo = `PIBG-SKSA-${curYear}-${String(next).padStart(4, '0')}`;
-      return next;
+      startNum = (current || 0) + 1;
+      return (current || 0) + keys.length;
     });
-    const payData = {
-      resitNo, tarikh,
-      nama: s.nama, noic: s.noic || '', kelas: s.kelas,
-      bulan: BULAN_NAMA[curMonth], tahun: curYear,
-      jumlah: 5, monthKey: mk
-    };
+
     const updates = {};
-    updates[`pibgapp-payments/${key}/${mk}`] = payData;
-    updates[`pibgapp-receipts/${resitNo}`] = payData;
+    keys.forEach((key, i) => {
+      const s = students[key];
+      const resitNo = `PIBG-SKSA-${curYear}-${String(startNum + i).padStart(4, '0')}`;
+      const payData = {
+        resitNo, tarikh,
+        nama: s.nama, noic: s.noic || '', kelas: s.kelas,
+        bulan: BULAN_NAMA[curMonth], tahun: curYear,
+        jumlah: 5, monthKey: mk
+      };
+      updates[`pibgapp-payments/${key}/${mk}`] = payData;
+      updates[`pibgapp-receipts/${resitNo}`] = payData;
+    });
+
+    bulananPending.clear();
     await db.ref().update(updates);
-    // Real-time listener will re-render the row as Bayar
+    // Real-time listener akan re-render semua row sebagai Bayar
   } catch (e) {
-    alert('Ralat menyimpan: ' + e.message);
-    row.classList.remove('saving');
-    if (box) box.textContent = '';
+    alert('Ralat menjana resit: ' + e.message);
+    keys.forEach(key => {
+      const row = document.getElementById('row-' + key);
+      if (row) row.classList.remove('saving');
+    });
   }
+}
+
+// ===== TOGGLE EDIT MODE =====
+function toggleEditMode() {
+  isEditMode = !isEditMode;
+  renderStudentList();
+}
+
+// ===== PADAM PEMBAYARAN (dalam edit mode) =====
+async function padamPembayaran(key) {
+  const s = students[key];
+  const mk = getMonthKey();
+  const p = payments[key];
+  if (!confirm(`Padam sumbangan ${BULAN_NAMA[curMonth]} ${curYear} untuk:\n${s.nama}\n\nRekod dan resit akan dihapuskan.`)) return;
+  try {
+    const updates = {};
+    updates[`pibgapp-payments/${key}/${mk}`] = null;
+    if (p && p.resitNo) updates[`pibgapp-receipts/${p.resitNo}`] = null;
+    await db.ref().update(updates);
+  } catch (e) { alert('Ralat: ' + e.message); }
 }
 
 // ===== ADMIN ACTIONS =====
