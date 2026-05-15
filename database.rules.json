@@ -1,0 +1,12 @@
+{
+  "rules": {
+    ".read": true,
+    "pibgsksaapp":         { ".write": "auth != null" },
+    "coachapp":            { ".write": true },
+    "kebersihanapp":       { ".write": true },
+    "laporanbertugasapp":  { ".write": true },
+    "livecameraapp":       { ".write": true },
+    "sukanprapp":          { ".write": true },
+    "ujianpsikometrikapp": { ".write": true }
+  }
+}

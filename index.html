@@ -367,6 +367,7 @@ select:focus{outline:none;border-color:var(--green)}
 
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
 <script>
 firebase.initializeApp({
   apiKey: "AIzaSyBSWbXoKgQt1E8xvJa9zaKyw3e9V_EMxAE",
@@ -378,6 +379,15 @@ firebase.initializeApp({
   appId: "1:810640165554:web:b3ad2dc6f1583ec2a657ab"
 });
 const db = firebase.database();
+
+// Auto sign-in dengan service account supaya admin app ada permission tulis ke
+// pibgsksaapp/* (rules: ".write": "auth != null"). User tidak nampak login.
+// parent.html tidak sign-in, jadi kekal read-only di peringkat rules.
+const SERVICE_EMAIL = 'pibg-app@sksa.local';
+const SERVICE_PWD   = 'PibgSksa2026-xK7q9PmR2nF4tL6v';
+const authReady = firebase.auth().signInWithEmailAndPassword(SERVICE_EMAIL, SERVICE_PWD).catch(err => {
+  console.warn('Auto sign-in gagal (writes mungkin gagal):', err.message);
+});
 
 const BULAN_NAMA = ['Januari','Februari','Mac','April','Mei','Jun','Julai','Ogos','September','Oktober','November','Disember'];
 const ANNUAL_MONTHS = [
@@ -488,7 +498,7 @@ function adminLogout() {
 
 // ===== KELAS OPTIONS =====
 async function loadKelasOptions() {
-  const snap = await db.ref('pibgapp-students').once('value');
+  const snap = await db.ref('pibgsksaapp/students').once('value');
   const sel = document.getElementById('kelas-select');
   if (!snap.exists()) { sel.innerHTML = '<option>Tiada data</option>'; return; }
   const klases = Object.keys(snap.val()).sort((a, b) => {
@@ -508,8 +518,8 @@ async function loadStudents() {
     return;
   }
   document.getElementById('student-list').innerHTML = '<div class="loading">⏳ Memuatkan...</div>';
-  if (paymentsListener) { db.ref('pibgapp-payments').off('value', paymentsListener); paymentsListener = null; }
-  const sSnap = await db.ref('pibgapp-students/' + selectedKelas).once('value');
+  if (paymentsListener) { db.ref('pibgsksaapp/payments').off('value', paymentsListener); paymentsListener = null; }
+  const sSnap = await db.ref('pibgsksaapp/students/' + selectedKelas).once('value');
   students = {};
   if (sSnap.exists()) sSnap.forEach(c => { students[c.key] = c.val(); });
   if (viewMode === 'bulanan') loadPayments();
@@ -517,12 +527,19 @@ async function loadStudents() {
 }
 
 // ===== LOAD PAYMENTS (realtime) =====
-function loadPayments() {
-  if (paymentsListener) { db.ref('pibgapp-payments').off('value', paymentsListener); paymentsListener = null; }
-  bulananPending = new Set();
+async function loadPayments() {
+  if (paymentsListener) { db.ref('pibgsksaapp/payments').off('value', paymentsListener); paymentsListener = null; }
   isEditMode = false;
   const mk = getMonthKey();
-  paymentsListener = db.ref('pibgapp-payments').on('value', snap => {
+
+  // Load pending ticks from Firebase before setting up payments listener
+  const pendingSnap = await db.ref('pibgsksaapp/pending/' + mk).once('value');
+  bulananPending = new Set();
+  if (pendingSnap.exists()) {
+    pendingSnap.forEach(child => { if (child.val()) bulananPending.add(child.key); });
+  }
+
+  paymentsListener = db.ref('pibgsksaapp/payments').on('value', snap => {
     payments = {};
     if (snap.exists()) {
       snap.forEach(sSnap => {
@@ -606,15 +623,22 @@ function resetStats() {
   ['st-total','st-bayar','st-belum','st-rm'].forEach(id => document.getElementById(id).textContent = '—');
 }
 
-// ===== TICK / UNTICK (lokal sahaja, tiada simpan ke Firebase) =====
-function toggleCheck(key) {
+// ===== TICK / UNTICK (simpan ke Firebase terus) =====
+async function toggleCheck(key) {
   if (payments[key]) return;
+  const mk = getMonthKey();
   if (bulananPending.has(key)) {
     bulananPending.delete(key);
   } else {
     bulananPending.add(key);
   }
   renderStudentList();
+  await authReady;
+  if (bulananPending.has(key)) {
+    db.ref('pibgsksaapp/pending/' + mk + '/' + key).set(true);
+  } else {
+    db.ref('pibgsksaapp/pending/' + mk + '/' + key).remove();
+  }
 }
 
 // ===== JANA RESIT UNTUK SEMUA YANG DITANDA =====
@@ -633,7 +657,7 @@ async function generateResitBulanan() {
 
   try {
     let startNum;
-    await db.ref('pibgapp-counter/lastResitNo').transaction(current => {
+    await db.ref('pibgsksaapp/counter/lastResitNo').transaction(current => {
       startNum = (current || 0) + 1;
       return (current || 0) + keys.length;
     });
@@ -648,8 +672,9 @@ async function generateResitBulanan() {
         bulan: BULAN_NAMA[curMonth], tahun: curYear,
         jumlah: 5, monthKey: mk
       };
-      updates[`pibgapp-payments/${key}/${mk}`] = payData;
-      updates[`pibgapp-receipts/${resitNo}`] = payData;
+      updates[`pibgsksaapp/payments/${key}/${mk}`] = payData;
+      updates[`pibgsksaapp/receipts/${resitNo}`] = payData;
+      updates[`pibgsksaapp/pending/${mk}/${key}`] = null;
     });
 
     bulananPending.clear();
@@ -678,8 +703,8 @@ async function padamPembayaran(key) {
   if (!confirm(`Padam sumbangan ${BULAN_NAMA[curMonth]} ${curYear} untuk:\n${s.nama}\n\nRekod dan resit akan dihapuskan.`)) return;
   try {
     const updates = {};
-    updates[`pibgapp-payments/${key}/${mk}`] = null;
-    if (p && p.resitNo) updates[`pibgapp-receipts/${p.resitNo}`] = null;
+    updates[`pibgsksaapp/payments/${key}/${mk}`] = null;
+    if (p && p.resitNo) updates[`pibgsksaapp/receipts/${p.resitNo}`] = null;
     await db.ref().update(updates);
   } catch (e) { alert('Ralat: ' + e.message); }
 }
@@ -692,8 +717,8 @@ async function adminReset(studentKey) {
   if (!confirm(`Reset sumbangan ${BULAN_NAMA[curMonth]} ${curYear} untuk:\n${s.nama}\n\nRekod akan dihapuskan.`)) return;
   try {
     const updates = {};
-    updates[`pibgapp-payments/${studentKey}/${mk}`] = null;
-    if (p && p.resitNo) updates[`pibgapp-receipts/${p.resitNo}`] = null;
+    updates[`pibgsksaapp/payments/${studentKey}/${mk}`] = null;
+    if (p && p.resitNo) updates[`pibgsksaapp/receipts/${p.resitNo}`] = null;
     await db.ref().update(updates);
   } catch (e) { alert('Ralat: ' + e.message); }
 }
@@ -706,8 +731,8 @@ async function adminPadamSemua() {
   try {
     const updates = {};
     for (const [key, p] of paidList) {
-      updates[`pibgapp-payments/${key}/${mk}`] = null;
-      if (p.resitNo) updates[`pibgapp-receipts/${p.resitNo}`] = null;
+      updates[`pibgsksaapp/payments/${key}/${mk}`] = null;
+      if (p.resitNo) updates[`pibgsksaapp/receipts/${p.resitNo}`] = null;
     }
     await db.ref().update(updates);
   } catch (e) { alert('Ralat: ' + e.message); }
@@ -715,8 +740,8 @@ async function adminPadamSemua() {
 
 // ===== ANNUAL VIEW =====
 function loadPaymentsAnnual() {
-  if (paymentsListener) { db.ref('pibgapp-payments').off('value', paymentsListener); paymentsListener = null; }
-  paymentsListener = db.ref('pibgapp-payments').on('value', snap => {
+  if (paymentsListener) { db.ref('pibgsksaapp/payments').off('value', paymentsListener); paymentsListener = null; }
+  paymentsListener = db.ref('pibgsksaapp/payments').on('value', snap => {
     annualPayments = {};
     if (snap.exists()) {
       snap.forEach(sSnap => {
@@ -854,7 +879,7 @@ async function saveAnnualForStudent(key) {
   try {
     // One atomic transaction for one unique receipt number
     let resitNo;
-    await db.ref('pibgapp-counter/lastResitNo').transaction(current => {
+    await db.ref('pibgsksaapp/counter/lastResitNo').transaction(current => {
       const next = (current || 0) + 1;
       resitNo = `PIBG-SKSA-${curYear}-${String(next).padStart(4, '0')}`;
       return next;
@@ -863,7 +888,7 @@ async function saveAnnualForStudent(key) {
     const updates = {};
     for (const mk of monthKeys) {
       const mo = parseInt(mk.split('-')[1]) - 1;
-      updates[`pibgapp-payments/${key}/${mk}`] = {
+      updates[`pibgsksaapp/payments/${key}/${mk}`] = {
         resitNo, tarikh,
         nama: s.nama, noic: s.noic || '', kelas: s.kelas,
         bulan: BULAN_NAMA[mo], tahun: curYear,
@@ -872,7 +897,7 @@ async function saveAnnualForStudent(key) {
       };
     }
     // One receipt record for the whole lump sum
-    updates[`pibgapp-receipts/${resitNo}`] = {
+    updates[`pibgsksaapp/receipts/${resitNo}`] = {
       resitNo, tarikh,
       nama: s.nama, noic: s.noic || '', kelas: s.kelas,
       tahun: curYear, jumlah: total, bilBulan: count,
@@ -912,10 +937,10 @@ async function padamAnnualFromModal(key, mk) {
   const mo = parseInt(mk.split('-')[1]) - 1;
   if (!confirm(`Padam sumbangan ${BULAN_NAMA[mo]} ${curYear} untuk ${students[key].nama}?`)) return;
   try {
-    const updates = { [`pibgapp-payments/${key}/${mk}`]: null };
+    const updates = { [`pibgsksaapp/payments/${key}/${mk}`]: null };
     // Only remove receipt if this is a single-month payment (not shared lump sum)
     if (p?.resitNo && (!p.bilBulan || p.bilBulan === 1)) {
-      updates[`pibgapp-receipts/${p.resitNo}`] = null;
+      updates[`pibgsksaapp/receipts/${p.resitNo}`] = null;
     }
     await db.ref().update(updates);
     closeModal();
@@ -933,14 +958,14 @@ async function adminPadamSemuaAnnual() {
       const p = annualPayments[key]?.[mk];
       if (p) {
         totalPaid++;
-        updates[`pibgapp-payments/${key}/${mk}`] = null;
+        updates[`pibgsksaapp/payments/${key}/${mk}`] = null;
         if (p.resitNo) resitNosToDelete.add(p.resitNo);
       }
     }
   }
   if (totalPaid === 0) { alert('Tiada rekod untuk dipadam.'); return; }
   if (!confirm(`AMARAN!\n\nPadam SEMUA ${totalPaid} rekod sumbangan (Mei–Nov ${curYear})\nKelas: ${selectedKelas}\n\nTindakan ini TIDAK BOLEH dibatalkan!`)) return;
-  for (const rno of resitNosToDelete) updates[`pibgapp-receipts/${rno}`] = null;
+  for (const rno of resitNosToDelete) updates[`pibgsksaapp/receipts/${rno}`] = null;
   try {
     await db.ref().update(updates);
   } catch (e) { alert('Ralat: ' + e.message); }
@@ -974,8 +999,8 @@ async function padamModal(studentKey) {
   if (!confirm(`Padam rekod sumbangan ${BULAN_NAMA[curMonth]} ${curYear} untuk ${s.nama}?`)) return;
   try {
     const updates = {};
-    updates[`pibgapp-payments/${studentKey}/${mk}`] = null;
-    if (p && p.resitNo) updates[`pibgapp-receipts/${p.resitNo}`] = null;
+    updates[`pibgsksaapp/payments/${studentKey}/${mk}`] = null;
+    if (p && p.resitNo) updates[`pibgsksaapp/receipts/${p.resitNo}`] = null;
     await db.ref().update(updates);
     closeModal();
   } catch (e) { alert('Ralat: ' + e.message); }
@@ -1000,7 +1025,7 @@ function salinLink(link) {
 async function showReceiptPage(resitNo) {
   document.getElementById('admin-app').style.display = 'none';
   document.getElementById('receipt-page').style.display = 'block';
-  const snap = await db.ref('pibgapp-receipts/' + resitNo).once('value');
+  const snap = await db.ref('pibgsksaapp/receipts/' + resitNo).once('value');
   if (!snap.exists()) {
     document.getElementById('rp-card').innerHTML = `
       <div style="text-align:center;padding:2rem">
