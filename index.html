@@ -271,6 +271,9 @@ select:focus{outline:none;border-color:var(--green)}
 .entri-act{background:var(--green-light);color:var(--green-dark);border:none;border-radius:6px;padding:4px 9px;font-size:12px;font-weight:600;cursor:pointer}
 .entri-del{background:var(--red-light);color:var(--red);border:none;border-radius:6px;padding:4px 8px;font-size:12px;font-weight:600;cursor:pointer}
 .lunas-banner{background:var(--green-light);color:var(--green-dark);text-align:center;padding:12px;border-radius:10px;font-weight:700;font-size:14px}
+.viewonly-note{background:#FEF3C7;color:#92400E;text-align:center;padding:12px;border-radius:10px;font-weight:600;font-size:13px;line-height:1.4}
+.edit-note{font-size:12px;padding:8px 12px;border-radius:8px;margin-bottom:10px;background:#FEF3C7;color:#92400E;font-weight:600}
+.edit-note.ok{background:var(--green-light);color:var(--green-dark)}
 </style>
 </head>
 <body>
@@ -287,13 +290,13 @@ select:focus{outline:none;border-color:var(--green)}
     </div>
     <div class="header-right">
       <div class="header-date" id="header-date"></div>
-      <button class="btn-admin" id="btn-admin" onclick="openAdminLogin()">⚙️ Admin</button>
+      <button class="btn-admin" id="btn-admin" onclick="openAdminLogin()">🔑 Log Masuk Guru</button>
     </div>
   </div>
 
   <div class="admin-bar" id="admin-bar">
-    <span class="admin-badge">🔐 ADMIN</span>
-    <span class="admin-bar-text">Mod Admin Aktif — Anda boleh reset dan padam rekod sumbangan.</span>
+    <span class="admin-badge">🔑 GURU</span>
+    <span class="admin-bar-text" id="admin-bar-text">Mod guru aktif.</span>
     <button class="btn-admin-logout" onclick="adminLogout()">Log Keluar</button>
   </div>
 
@@ -363,17 +366,17 @@ select:focus{outline:none;border-color:var(--green)}
 <div class="overlay" id="admin-login-overlay">
   <div class="modal modal-sm">
     <div class="modal-header dark">
-      <h3>🔐 Log Masuk Admin</h3>
+      <h3>🔑 Log Masuk Guru Kelas</h3>
       <button class="close-btn" onclick="closeAdminLogin()">✕</button>
     </div>
     <div class="modal-body">
-      <div class="admin-desc">Masukkan kata laluan untuk mengakses fungsi pengurusan rekod sumbangan.</div>
+      <div class="admin-desc">Masukkan kata laluan kelas anda untuk merekod bayaran sumbangan. Log masuk kekal 24 jam. Tanpa log masuk, data boleh dilihat sahaja.</div>
       <div class="admin-field">
-        <label>Kata Laluan Admin</label>
-        <input type="password" id="admin-pwd" placeholder="Masukkan kata laluan..."
+        <label>Kata Laluan Kelas</label>
+        <input type="password" id="admin-pwd" placeholder="Masukkan kata laluan kelas..."
           onkeydown="if(event.key==='Enter') doAdminLogin()">
       </div>
-      <div class="admin-error" id="admin-error">Kata laluan salah. Cuba lagi.</div>
+      <div class="admin-error" id="admin-error">Kata laluan tidak sah. Cuba lagi.</div>
       <div class="modal-actions">
         <button class="btn-modal btn-batal" onclick="closeAdminLogin()">Batal</button>
         <button class="btn-modal" style="background:#2C3E50;color:#fff" onclick="doAdminLogin()">Log Masuk</button>
@@ -414,8 +417,27 @@ let familiesCache = {};     // {familyId: famObj} (realtime)
 let studentFamily = {};     // {studentKey: familyId}
 let familiesListener = null;
 let selectedKelas = '';
-let isAdmin = false;
 let currentFamilyId = null;
+
+// ===== AUTH: log masuk ikut kelas, kekal 24 jam =====
+// Kata laluan disimpan sebagai hash SHA-256 dalam kod (guru diberi plaintext berasingan).
+const CLASS_PW_HASH = {"PRASEKOLAH AZ ZAHRA":"019345cc7684d9fcbc280881141a38898faa46d387ae2fea7e498b38ffcb9acb","PRASEKOLAH NUR IMAN":"4c6e90244461b3dfb761a272192510c1d95908ddc2a74d8471d294f72b330ef0","TAHUN 1 BESTARI":"82219e49954af272b5d5744410df09fb0726fee56b007c18d4d3182098e86b0c","TAHUN 1 CEMERLANG":"65a562c3eb18c3a38f564fef3d39b1c76f13de06954f64b1a0d8e9e0f71d235b","TAHUN 1 GEMILANG":"975bad0965fa0e459cd6efb9691ff3a6602f31b0c5c06dd1ed227ff25b26fafe","TAHUN 2 BESTARI":"6ba2445346f0fa6f0a5c6cde69943cf6a1620c637cac0523e982a20e14806a25","TAHUN 2 CEMERLANG":"426a5cbd1ce1956fac15998b36fd27795ebdcb5eb390dbe92f6864c8aba3a80a","TAHUN 2 GEMILANG":"4ea08bdc98e8d24e1edd3e65d04ae0c6f33e59a2405ea7a8fc8ba5a3a5879d05","TAHUN 3 BESTARI":"ce779e772a4f3e3d7777904f810afc8aaa5dde8290f0beb8467947db254a668c","TAHUN 3 CEMERLANG":"2bc30df25b5d6395ea158e37824eaca03acfae7b9595a6e2765f70eb16bc9654","TAHUN 3 GEMILANG":"549fe5d869e2b30cf8da8a5bcf59e94b8ec9a430820940a25bc26df42b328169","TAHUN 4 BESTARI":"26340384a71cf239f1b4e0001b6388388189c199bf172a4b05e868f2cf2a0b0e","TAHUN 4 CEMERLANG":"d3740a52b54d7d9e82b6c4274f74e9ab8b94f905570254a45a94f164e1094ccd","TAHUN 4 GEMILANG":"52b16e04f8cd4d7c1faf000ee64cf718f7a7b4c04f2a3507b6a5b22a1552b65d","TAHUN 5 BESTARI":"cf011bdbdbfe2dd3ae74a19d918eadcd2504a3f4fcd0aea2b95bbf08262e15ad","TAHUN 5 CEMERLANG":"4d5f8f691ca64e47de201bc5eaabd89786a5d1404f31dd7a029777898af53bbd","TAHUN 5 GEMILANG":"e17ab04c720f6b46211a28e3e807b4ada812d983245f3ac3101a27371b50f9b5","TAHUN 6 BESTARI":"bb683317a1ed937f2c75b8eba4dea94997aec2f49a8303f42dc35888157a1ffa","TAHUN 6 CEMERLANG":"4fe9bcf8b0b6578035c0c508cb0180444fbff9b2f4cf2a172113d60ebfbbd464","PPKI":"a19747e0504f2f3eff9ddc7bead460b7c8d42d4bcc04a6249e4f6e21d52e6bce"};
+const AUTH_KEY = 'pibg_auth_v1';
+const AUTH_TTL_MS = 24 * 60 * 60 * 1000; // 24 jam
+let authedClass = null; // kelas yang sedang log masuk (atau null)
+
+async function sha256hex(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+function restoreAuth() {
+  try {
+    const a = JSON.parse(localStorage.getItem(AUTH_KEY) || 'null');
+    if (a && a.kelas && a.exp && Date.now() < a.exp && CLASS_PW_HASH[a.kelas]) authedClass = a.kelas;
+    else { authedClass = null; localStorage.removeItem(AUTH_KEY); }
+  } catch (e) { authedClass = null; }
+}
+function canEdit() { return !!authedClass && authedClass === selectedKelas; }
 
 // ===== INIT =====
 window.addEventListener('DOMContentLoaded', () => {
@@ -428,6 +450,8 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 async function bootstrap() {
+  restoreAuth();
+  refreshAuthBar();
   try { await authReady; } catch (e) {}
   const sfSnap = await db.ref('pibgsksaapp/studentFamily').once('value');
   studentFamily = sfSnap.val() || {};
@@ -446,9 +470,9 @@ function updateHeaderDate() {
     '<br>' + now.toLocaleTimeString('ms-MY', {hour:'2-digit', minute:'2-digit'});
 }
 
-// ===== ADMIN =====
+// ===== LOG MASUK GURU KELAS =====
 function openAdminLogin() {
-  if (isAdmin) { adminLogout(); return; }
+  if (authedClass) { adminLogout(); return; }
   document.getElementById('admin-pwd').value = '';
   document.getElementById('admin-error').style.display = 'none';
   document.getElementById('admin-login-overlay').classList.add('show');
@@ -461,28 +485,50 @@ function refreshUI() {
   if (selectedKelas) renderStudentList();
   if (currentFamilyId && document.getElementById('overlay').classList.contains('show')) renderFamilyModal();
 }
-function doAdminLogin() {
-  if (document.getElementById('admin-pwd').value === 'admin123') {
-    isAdmin = true;
-    closeAdminLogin();
-    document.getElementById('admin-bar').style.display = 'flex';
-    const btn = document.getElementById('btn-admin');
-    btn.textContent = '🔒 Admin Aktif';
-    btn.classList.add('active');
-    refreshUI();
-  } else {
+async function doAdminLogin() {
+  const pw = document.getElementById('admin-pwd').value.trim();
+  const h = pw ? await sha256hex(pw) : '';
+  const kelas = Object.keys(CLASS_PW_HASH).find(k => CLASS_PW_HASH[k] === h);
+  if (!kelas) {
     document.getElementById('admin-error').style.display = 'block';
     document.getElementById('admin-pwd').value = '';
     document.getElementById('admin-pwd').focus();
+    return;
   }
+  authedClass = kelas;
+  localStorage.setItem(AUTH_KEY, JSON.stringify({ kelas, exp: Date.now() + AUTH_TTL_MS }));
+  closeAdminLogin();
+  refreshAuthBar();
+  // auto-pilih kelas guru itu supaya terus boleh rekod
+  const sel = document.getElementById('kelas-select');
+  if (sel.value !== kelas) { sel.value = kelas; loadStudents(); }
+  else refreshUI();
 }
 function adminLogout() {
-  isAdmin = false;
-  document.getElementById('admin-bar').style.display = 'none';
-  const btn = document.getElementById('btn-admin');
-  btn.textContent = '⚙️ Admin';
-  btn.classList.remove('active');
+  authedClass = null;
+  localStorage.removeItem(AUTH_KEY);
+  refreshAuthBar();
   refreshUI();
+}
+function refreshAuthBar() {
+  const bar = document.getElementById('admin-bar');
+  const btn = document.getElementById('btn-admin');
+  if (authedClass) {
+    let expTxt = '';
+    try {
+      const exp = JSON.parse(localStorage.getItem(AUTH_KEY) || '{}').exp;
+      if (exp) expTxt = new Date(exp).toLocaleString('ms-MY', {weekday:'short', day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'});
+    } catch (e) {}
+    document.getElementById('admin-bar-text').textContent =
+      `Log masuk sebagai guru ${authedClass} — boleh rekod bayaran untuk kelas ini. Sah sehingga ${expTxt}.`;
+    bar.style.display = 'flex';
+    btn.textContent = '🔓 ' + authedClass;
+    btn.classList.add('active');
+  } else {
+    bar.style.display = 'none';
+    btn.textContent = '🔑 Log Masuk Guru';
+    btn.classList.remove('active');
+  }
 }
 
 // ===== KELAS OPTIONS =====
@@ -563,8 +609,13 @@ function renderStudentList() {
     </div>`;
   }).join('');
 
+  const editNote = canEdit()
+    ? `<div class="edit-note ok">✏️ Mod guru ${selectedKelas} — anda boleh merekod bayaran</div>`
+    : `<div class="edit-note">🔒 Lihat sahaja${authedClass ? ` — anda log masuk untuk ${authedClass}` : ''}. Log masuk guru ${selectedKelas} untuk merekod bayaran.</div>`;
+
   document.getElementById('student-list').innerHTML =
     `<div class="kelas-title">${selectedKelas} <span>RM70 sekali / keluarga</span></div>
+     ${editNote}
      <div class="student-grid">${rows}</div>`;
 }
 function resetStats() {
@@ -601,12 +652,16 @@ function renderFamilyModal() {
       <span class="entri-rm">${rm(e.jumlah)}</span>
       <button class="entri-act" onclick="printResit('${e.resitNo}')">🖨️</button>
       <button class="entri-act" onclick="salinLink('${link}')">🔗</button>
-      ${isAdmin ? `<button class="entri-del" onclick="padamEntri('${fid}','${e.resitNo}')">🗑️</button>` : ''}
+      ${canEdit() ? `<button class="entri-del" onclick="padamEntri('${fid}','${e.resitNo}')">🗑️</button>` : ''}
     </div>`;
   }).join('') : '<div style="font-size:12px;color:#999;padding:6px 0">Tiada bayaran lagi.</div>';
 
   let paySection;
-  if (st.baki > 0) {
+  if (st.baki <= 0) {
+    paySection = `<div class="lunas-banner">🎉 Keluarga ini telah melunaskan sumbangan RM70.</div>`;
+  } else if (!canEdit()) {
+    paySection = `<div class="viewonly-note">🔒 Lihat sahaja. Log masuk sebagai guru ${selectedKelas} untuk merekod bayaran.</div>`;
+  } else {
     paySection = `
       <div class="pay-section">
         <div class="pay-label">REKOD BAYARAN BARU (baki ${rm(st.baki)})</div>
@@ -623,8 +678,6 @@ function renderFamilyModal() {
           <button class="btn-rekod" id="btn-rekod" onclick="rekodBayaran()">Jana Resit</button>
         </div>
       </div>`;
-  } else {
-    paySection = `<div class="lunas-banner">🎉 Keluarga ini telah melunaskan sumbangan RM70.</div>`;
   }
 
   document.getElementById('fam-modal-body').innerHTML = `
@@ -657,6 +710,7 @@ function setPay(v) {
 }
 
 async function rekodBayaran() {
+  if (!canEdit()) { alert('Hanya guru kelas yang log masuk boleh merekod bayaran.'); return; }
   const fid = currentFamilyId;
   const fam = familiesCache[fid];
   if (!fam) return;
@@ -706,6 +760,7 @@ async function rekodBayaran() {
 }
 
 async function padamEntri(fid, resitNo) {
+  if (!canEdit()) { alert('Hanya guru kelas yang log masuk boleh memadam bayaran.'); return; }
   const fam = familiesCache[fid];
   if (!fam || !fam.entri || !fam.entri[resitNo]) return;
   const amt = fam.entri[resitNo].jumlah || 0;
