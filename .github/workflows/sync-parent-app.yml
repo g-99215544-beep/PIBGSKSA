@@ -1,0 +1,43 @@
+name: Sync parent app to SKSAPIBG
+
+# Auto-push parent.html -> SKSAPIBG/index.html whenever parent.html changes.
+# Uses a write-scoped SSH deploy key (secret SKSAPIBG_DEPLOY_KEY) limited to SKSAPIBG.
+on:
+  push:
+    branches: [main]
+    paths:
+      - parent.html
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PIBGSKSA
+        uses: actions/checkout@v4
+
+      - name: Configure SSH deploy key
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.SKSAPIBG_DEPLOY_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -t ed25519 github.com >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Push parent.html as index.html to SKSAPIBG
+        env:
+          GIT_SSH_COMMAND: ssh -i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes
+        run: |
+          set -e
+          git clone git@github.com:g-99215544-beep/SKSAPIBG.git target
+          cp parent.html target/index.html
+          cd target
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "index.html already up to date — nothing to sync."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Auto-sync parent app from PIBGSKSA@${GITHUB_SHA::7}"
+          git push
+          echo "Synced parent.html -> SKSAPIBG/index.html"
