@@ -111,6 +111,26 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
   .receipt-page-card{box-shadow:none;border:1px solid #ddd;margin:0 auto;max-width:380px}
   .rp-print-btn,.rp-back-btn{display:none !important}
 }
+
+/* ===== FAMILY (RM70) ===== */
+.fam-head{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.fam-penjaga{font-size:15px;font-weight:700;color:var(--green-dark)}
+.fam-penjaga-sub{font-size:11px;color:var(--text2);margin-top:2px}
+.fam-statuspill{padding:5px 12px;border-radius:20px;font-size:12px;font-weight:700;height:fit-content;white-space:nowrap}
+.pill-lunas{background:var(--green-light);color:var(--green-dark)}
+.pill-separa{background:#FEF3C7;color:#B45309}
+.pill-belum{background:#f5f5f0;color:var(--gray)}
+.fam-anak{background:var(--bg);border-radius:10px;padding:10px 12px;margin-bottom:12px}
+.fam-anak-title{font-size:11px;color:var(--text2);font-weight:600;margin-bottom:6px;letter-spacing:0.3px}
+.fam-anak-item{font-size:13px;padding:3px 0;display:flex;justify-content:space-between;gap:8px}
+.fam-anak-item .ak{background:var(--green-light);color:var(--green-dark);font-size:11px;padding:1px 8px;border-radius:10px;white-space:nowrap}
+.fam-progress{display:flex;gap:8px;margin-bottom:12px}
+.fam-pbox{flex:1;background:var(--bg);border-radius:10px;padding:10px;text-align:center}
+.fam-pbox .v{font-size:18px;font-weight:700}
+.fam-pbox .v.green{color:var(--green)} .fam-pbox .v.red{color:var(--red)}
+.fam-pbox .l{font-size:10px;color:var(--text2);margin-top:1px}
+.fam-bar{height:8px;background:#eee;border-radius:6px;overflow:hidden;margin-bottom:14px}
+.fam-bar > div{height:100%;background:var(--green);transition:width .3s}
 </style>
 </head>
 <body>
@@ -140,16 +160,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
     <!-- RESULTS (hidden initially) -->
     <div id="results" style="display:none">
       <div class="student-card" id="student-card"></div>
-
-      <div class="card">
-        <div class="year-row">
-          <span class="field-label">PILIH TAHUN</span>
-          <select class="year-select" id="year-select" onchange="renderMonths()"></select>
-        </div>
-        <div class="stats-bar" id="stats-bar"></div>
-        <div class="month-title" id="month-title">Status Sumbangan</div>
-        <div class="month-list" id="month-list"></div>
-      </div>
+      <div class="card" id="family-card"></div>
     </div>
   </div>
 </div>
@@ -167,13 +178,13 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
       <div class="rp-resit-no"><span class="rp-resit-badge" id="rp-no">—</span></div>
       <div id="rp-rows"></div>
       <div class="rp-total-box">
-        <div class="rp-total-label">JUMLAH SUMBANGAN</div>
-        <div class="rp-total-amount" id="rp-jumlah">RM 5.00</div>
+        <div class="rp-total-label">JUMLAH BAYARAN INI</div>
+        <div class="rp-total-amount" id="rp-jumlah">RM 0.00</div>
       </div>
       <hr class="rp-divider">
       <div class="rp-footer">
         Resit ini adalah bukti sumbangan sah PIBG SK Sri Aman.<br>
-        Sumbangan: RM5.00 sebulan / murid<br>
+        Sumbangan PIBG: RM70.00 sekali bayar / keluarga<br>
         Terima kasih atas kerjasama anda.
       </div>
       <button class="rp-print-btn" onclick="window.print()">🖨️ Cetak / Simpan PDF</button>
@@ -196,27 +207,24 @@ firebase.initializeApp({
 });
 const db = firebase.database();
 
-const BULAN_NAMA = ['Januari','Februari','Mac','April','Mei','Jun','Julai','Ogos','September','Oktober','November','Disember'];
+const FAM_TARGET = 70;
 
 // State (read-only)
-let foundStudent = null; // {key, kelas, nama, noic}
-let studentPayments = {}; // {monthKey: paymentData}
+let foundStudent = null;   // {key, kelas, nama, noic}
+let foundFamily = null;    // family obj
+
+function rm(n) { return 'RM ' + Number(n || 0).toFixed(2); }
 
 // ===== SEARCH =====
 async function doSearch() {
   const ic = document.getElementById('ic-input').value.trim();
   const errEl = document.getElementById('err-msg');
   errEl.classList.remove('show');
-
-  if (!ic) {
-    showError('Sila masukkan No. IC murid.');
-    return;
-  }
+  if (!ic) { showError('Sila masukkan No. IC murid.'); return; }
 
   const btn = document.getElementById('btn-search');
   const oldText = btn.innerHTML;
-  btn.disabled = true;
-  btn.innerHTML = 'Mencari...';
+  btn.disabled = true; btn.innerHTML = 'Mencari...';
 
   try {
     const snap = await db.ref('pibgsksaapp/students').once('value');
@@ -227,26 +235,27 @@ async function doSearch() {
           const s = stuSnap.val();
           if (s && s.noic && s.noic.toString().trim().toLowerCase() === ic.toLowerCase()) {
             match = { key: stuSnap.key, kelas: kelasSnap.key, nama: s.nama, noic: s.noic };
-            return true; // break inner
+            return true;
           }
         });
-        if (match) return true; // break outer
+        if (match) return true;
       });
     }
-
-    if (!match) {
-      showError('Murid tidak dijumpai. Sila semak No. IC dan cuba lagi.');
-      return;
-    }
+    if (!match) { showError('Murid tidak dijumpai. Sila semak No. IC dan cuba lagi.'); return; }
 
     foundStudent = match;
-    await loadPayments();
+    foundFamily = null;
+    const fidSnap = await db.ref('pibgsksaapp/studentFamily/' + match.key).once('value');
+    const fid = fidSnap.val();
+    if (fid) {
+      const fSnap = await db.ref('pibgsksaapp/families/' + fid).once('value');
+      foundFamily = fSnap.val();
+    }
     showResults();
   } catch (e) {
     showError('Ralat sambungan: ' + (e.message || e));
   } finally {
-    btn.disabled = false;
-    btn.innerHTML = oldText;
+    btn.disabled = false; btn.innerHTML = oldText;
   }
 }
 
@@ -256,99 +265,72 @@ function showError(msg) {
   errEl.classList.add('show');
 }
 
-// ===== LOAD PAYMENTS =====
-async function loadPayments() {
-  const snap = await db.ref('pibgsksaapp/payments/' + foundStudent.key).once('value');
-  studentPayments = snap.exists() ? snap.val() : {};
+function famStatus(fam) {
+  const terkumpul = fam && fam.terkumpul ? fam.terkumpul : 0;
+  const baki = Math.max(0, FAM_TARGET - terkumpul);
+  if (terkumpul <= 0) return {cls:'belum', terkumpul, baki};
+  if (baki <= 0)      return {cls:'lunas', terkumpul, baki:0};
+  return {cls:'separa', terkumpul, baki};
 }
 
 // ===== SHOW RESULTS =====
 function showResults() {
   document.getElementById('results').style.display = 'block';
-
   document.getElementById('student-card').innerHTML = `
     <div class="sc-nama">${foundStudent.nama}</div>
-    <div class="sc-row">
-      <span class="sc-key">NO. IC</span>
-      <span class="sc-val">${foundStudent.noic}</span>
-    </div>
-    <div class="sc-row">
-      <span class="sc-key">KELAS</span>
-      <span class="sc-val">${foundStudent.kelas}</span>
-    </div>
-    <div class="sc-actions">
-      <button class="btn-ghost" onclick="resetSearch()">🔄 Cari Murid Lain</button>
-    </div>`;
-
-  const years = new Set();
-  Object.keys(studentPayments).forEach(mk => {
-    const y = parseInt(mk.split('-')[0], 10);
-    if (!isNaN(y)) years.add(y);
-  });
-  const currentYear = new Date().getFullYear();
-  years.add(currentYear);
-  const sorted = [...years].sort((a, b) => b - a);
-
-  const yearSel = document.getElementById('year-select');
-  yearSel.innerHTML = sorted.map(y => `<option value="${y}">${y}</option>`).join('');
-  yearSel.value = String(currentYear);
-
-  renderMonths();
+    <div class="sc-row"><span class="sc-key">NO. IC</span><span class="sc-val">${foundStudent.noic}</span></div>
+    <div class="sc-row"><span class="sc-key">KELAS</span><span class="sc-val">${foundStudent.kelas}</span></div>
+    <div class="sc-actions"><button class="btn-ghost" onclick="resetSearch()">🔄 Cari Murid Lain</button></div>`;
+  renderFamily();
 }
 
-// ===== RENDER MONTHS =====
-function renderMonths() {
-  const year = parseInt(document.getElementById('year-select').value, 10);
-  document.getElementById('month-title').textContent = `Status Sumbangan ${year}`;
+function renderFamily() {
+  const card = document.getElementById('family-card');
+  const fam = foundFamily;
+  if (!fam) { card.innerHTML = '<div style="text-align:center;color:#888;font-size:13px">Tiada rekod keluarga untuk murid ini.</div>'; return; }
+  const st = famStatus(fam);
+  const anak = fam.anak || {};
+  const anakRows = Object.values(anak)
+    .sort((a, b) => (a.nama || '').localeCompare(b.nama || ''))
+    .map(a => `<div class="fam-anak-item"><span>${a.nama}</span><span class="ak">${a.kelas || ''}</span></div>`).join('');
+  const pct = Math.min(100, Math.round(st.terkumpul / FAM_TARGET * 100));
+  const pillCls = st.cls === 'lunas' ? 'pill-lunas' : st.cls === 'separa' ? 'pill-separa' : 'pill-belum';
+  const pillTxt = st.cls === 'lunas' ? '✓ LUNAS' : st.cls === 'separa' ? 'SEPARA' : 'BELUM BAYAR';
 
-  // Untuk 2026: mula dari Mei sahaja. Hanya tunjukkan bulan-bulan
-  // berikutnya jika murid telah membayar lebih (RM5 = 1 bulan).
-  let startIdx = 0, endIdx = 11;
-  if (year === 2026) {
-    startIdx = 4; // Mei
-    let lastPaidIdx = -1;
-    for (let i = 0; i < 12; i++) {
-      const mk = `${year}-${String(i + 1).padStart(2, '0')}`;
-      if (studentPayments[mk]) lastPaidIdx = i;
-    }
-    endIdx = Math.max(startIdx, lastPaidIdx);
-  }
+  const entriObj = fam.entri || {};
+  const entri = Object.values(entriObj).filter(Boolean).sort((a, b) => (a.resitNo || '').localeCompare(b.resitNo || ''));
+  const entriRows = entri.length ? entri.map(e => `
+    <div class="month-row paid" onclick="openReceipt('${e.resitNo}')">
+      <span class="m-name">${e.tarikh || ''}<br><span style="font-size:11px;color:#888">${e.resitNo}</span></span>
+      <span class="m-badge badge-bayar">${rm(e.jumlah)}</span>
+      <button class="m-action" onclick="event.stopPropagation();openReceipt('${e.resitNo}')">Resit</button>
+    </div>`).join('') : '<div style="font-size:13px;color:#888;text-align:center;padding:10px">Tiada bayaran direkodkan lagi.</div>';
 
-  let paidCount = 0, totalRM = 0, rows = '';
-  for (let idx = startIdx; idx <= endIdx; idx++) {
-    const bulan = BULAN_NAMA[idx];
-    const mk = `${year}-${String(idx + 1).padStart(2, '0')}`;
-    const p = studentPayments[mk];
-    if (p) {
-      paidCount++;
-      totalRM += 5; // setiap bulan kira RM5 untuk paparan
-      rows += `<div class="month-row paid" onclick="openReceipt('${p.resitNo}')">
-        <span class="m-num">${idx + 1}</span>
-        <span class="m-name">${bulan}</span>
-        <span class="m-badge badge-bayar">✓ Bayar</span>
-        <button class="m-action" onclick="event.stopPropagation();openReceipt('${p.resitNo}')">Resit</button>
-      </div>`;
-    } else {
-      rows += `<div class="month-row">
-        <span class="m-num">${idx + 1}</span>
-        <span class="m-name">${bulan}</span>
-        <span class="m-badge badge-belum">Belum</span>
-      </div>`;
-    }
-  }
-
-  const totalShown = endIdx - startIdx + 1;
-  document.getElementById('month-list').innerHTML = rows;
-  document.getElementById('stats-bar').innerHTML = `
-    <div class="stat-pill"><div class="stat-num green">${paidCount}</div><div class="stat-label">DIBAYAR</div></div>
-    <div class="stat-pill"><div class="stat-num red">${totalShown - paidCount}</div><div class="stat-label">BELUM</div></div>
-    <div class="stat-pill"><div class="stat-num blue">RM ${totalRM}</div><div class="stat-label">JUMLAH</div></div>`;
+  card.innerHTML = `
+    <div class="fam-head">
+      <div>
+        <div class="fam-penjaga">${fam.penjaga || '(Tiada nama penjaga)'}</div>
+        <div class="fam-penjaga-sub">Sumbangan PIBG • RM70 / keluarga</div>
+      </div>
+      <div class="fam-statuspill ${pillCls}">${pillTxt}</div>
+    </div>
+    <div class="fam-anak">
+      <div class="fam-anak-title">ANAK BERSEKOLAH (${Object.keys(anak).length})</div>
+      ${anakRows}
+    </div>
+    <div class="fam-progress">
+      <div class="fam-pbox"><div class="v green">${rm(st.terkumpul)}</div><div class="l">Terkumpul</div></div>
+      <div class="fam-pbox"><div class="v red">${rm(st.baki)}</div><div class="l">Baki</div></div>
+      <div class="fam-pbox"><div class="v">RM70</div><div class="l">Sasaran</div></div>
+    </div>
+    <div class="fam-bar"><div style="width:${pct}%"></div></div>
+    <div class="month-title">Rekod Bayaran (${entri.length})</div>
+    <div class="month-list">${entriRows}</div>`;
 }
 
 // ===== RESET / CARI LAIN =====
 function resetSearch() {
-  foundStudent = null;
-  studentPayments = {};
+  foundStudent = null; foundFamily = null;
   document.getElementById('results').style.display = 'none';
   document.getElementById('ic-input').value = '';
   document.getElementById('err-msg').classList.remove('show');
@@ -359,24 +341,20 @@ function resetSearch() {
 async function openReceipt(resitNo) {
   if (!resitNo) return;
   const snap = await db.ref('pibgsksaapp/receipts/' + resitNo).once('value');
-  if (!snap.exists()) {
-    alert('Resit tidak dijumpai: ' + resitNo);
-    return;
-  }
+  if (!snap.exists()) { alert('Resit tidak dijumpai: ' + resitNo); return; }
   const p = snap.val();
-
   document.getElementById('rp-no').textContent = p.resitNo;
-  document.getElementById('rp-jumlah').textContent = `RM ${parseFloat(p.jumlah || 5).toFixed(2)}`;
-  const bulanDisplay = p.bulanLiputan || `${p.bulan} ${p.tahun}`;
-  const jenisDisplay = p.bilBulan > 1 ? `Yuran PIBG (${p.bilBulan} bulan)` : 'Yuran PIBG Bulanan';
+  document.getElementById('rp-jumlah').textContent = rm(p.jumlah || 0);
+  const anakArr = Array.isArray(p.anak) ? p.anak : (p.anak ? [p.anak] : []);
+  const anakHtml = anakArr.map(n => `<div>${n}</div>`).join('') || '—';
+  const lunasTxt = (p.baki <= 0) ? '<span style="color:#1D9E75;font-weight:700">LUNAS ✓</span>' : rm(p.baki) + ' lagi';
   document.getElementById('rp-rows').innerHTML = `
-    <div class="rp-row"><span class="rp-key">Nama Murid</span><span class="rp-val">${p.nama}</span></div>
-    <div class="rp-row"><span class="rp-key">No. IC / Pengenalan</span><span class="rp-val">${p.noic || '—'}</span></div>
-    <div class="rp-row"><span class="rp-key">Kelas</span><span class="rp-val">${p.kelas}</span></div>
-    <div class="rp-row"><span class="rp-key">Bulan Sumbangan</span><span class="rp-val">${bulanDisplay}</span></div>
-    <div class="rp-row"><span class="rp-key">Tarikh Bayar</span><span class="rp-val">${p.tarikh}</span></div>
-    <div class="rp-row"><span class="rp-key">Jenis Sumbangan</span><span class="rp-val">${jenisDisplay}</span></div>`;
-
+    <div class="rp-row"><span class="rp-key">Penjaga / Keluarga</span><span class="rp-val">${p.penjaga || '—'}</span></div>
+    <div class="rp-row"><span class="rp-key">Anak Bersekolah</span><span class="rp-val">${anakHtml}</span></div>
+    <div class="rp-row"><span class="rp-key">Tarikh Bayar</span><span class="rp-val">${p.tarikh || '—'}</span></div>
+    <div class="rp-row"><span class="rp-key">Jenis</span><span class="rp-val">Sumbangan PIBG (RM70/keluarga)</span></div>
+    <div class="rp-row"><span class="rp-key">Terkumpul</span><span class="rp-val">${rm(p.terkumpul || p.jumlah || 0)} / RM70.00</span></div>
+    <div class="rp-row"><span class="rp-key">Baki</span><span class="rp-val">${lunasTxt}</span></div>`;
   document.getElementById('main-app').style.display = 'none';
   document.getElementById('receipt-page').style.display = 'block';
   window.scrollTo(0, 0);
@@ -388,7 +366,6 @@ function closeReceipt() {
   window.scrollTo(0, 0);
 }
 
-// Focus on IC input on load
 window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('ic-input').focus();
 });
