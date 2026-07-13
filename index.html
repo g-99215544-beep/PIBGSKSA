@@ -215,6 +215,28 @@ select:focus{outline:none;border-color:var(--green)}
 .btn-sahkan:hover{background:var(--green-dark)}
 .btn-sahkan:disabled{background:#bbb;cursor:not-allowed}
 .treasurer-empty{padding:36px 16px;text-align:center;color:var(--text2);background:var(--card);border:1px solid var(--border);border-radius:8px;font-size:14px}
+.treasurer-tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:16px;overflow-x:auto}
+.treasurer-tab{background:none;border:none;border-bottom:3px solid transparent;padding:9px 12px;color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap}
+.treasurer-tab:hover{color:var(--green-dark)}
+.treasurer-tab.active{color:var(--green-dark);border-bottom-color:var(--green)}
+.history-list{background:var(--card);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.history-item{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid #f0f0ec;flex-wrap:wrap}
+.history-item:last-child{border-bottom:none}
+.history-info{flex:1;min-width:190px}
+.history-name{font-size:14px;font-weight:600}
+.history-meta{font-size:12px;color:var(--text2);margin-top:3px;line-height:1.4}
+.history-status{font-size:11px;font-weight:700;padding:3px 8px;border-radius:12px;white-space:nowrap}
+.history-status.pending{background:#FEF3C7;color:#92400E}
+.history-status.confirmed{background:var(--green-light);color:var(--green-dark)}
+.class-performance{background:var(--card);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.class-performance-item{padding:14px 16px;border-bottom:1px solid #f0f0ec}
+.class-performance-item:last-child{border-bottom:none}
+.class-performance-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.class-performance-name{font-size:14px;font-weight:700}
+.class-performance-meta{font-size:12px;color:var(--text2);margin-top:4px;line-height:1.4}
+.class-performance-pct{font-size:17px;font-weight:700;color:var(--green-dark);white-space:nowrap}
+.class-progress-track{height:8px;background:#edf0ed;border-radius:6px;overflow:hidden;margin-top:10px}
+.class-progress-fill{height:100%;background:var(--green);border-radius:6px}
 
 /* RECEIPT PAGE */
 #receipt-page{display:none;min-height:100vh;background:var(--bg);padding:2rem}
@@ -455,6 +477,7 @@ const AUTH_KEY = 'pibg_auth_v1';
 const AUTH_TTL_MS = 24 * 60 * 60 * 1000; // 24 jam
 let authedClass = null; // kelas yang sedang log masuk (atau null)
 let authRole = null; // 'guru', 'bendahari', atau null
+let treasurerTab = 'pengesahan';
 
 async function sha256hex(str) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
@@ -494,6 +517,7 @@ async function bootstrap() {
   loadKelasOptions();
   familiesListener = db.ref('pibgsksaapp/families').on('value', snap => {
     familiesCache = snap.val() || {};
+    if (isTreasurer()) renderTreasurerDashboard();
     if (selectedKelas) renderStudentList();
     if (currentFamilyId && document.getElementById('overlay').classList.contains('show')) renderFamilyModal();
   });
@@ -656,39 +680,100 @@ function formatMasaRekod(timestamp, fallback) {
   if (!timestamp || typeof timestamp !== 'number') return fallback || '';
   return new Date(timestamp).toLocaleString('ms-MY', {day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit'});
 }
+function setTreasurerTab(tab) {
+  if (!['pengesahan', 'sejarah', 'kelas'].includes(tab)) return;
+  treasurerTab = tab;
+  renderTreasurerDashboard();
+}
 function renderTreasurerDashboard() {
   const dashboard = document.getElementById('treasurer-dashboard');
   if (!dashboard || !isTreasurer()) return;
-  const pending = Object.values(receiptsCache)
-    .filter(r => r && r.statusPengesahan !== 'disahkan')
+  const sejarah = Object.values(receiptsCache)
+    .filter(Boolean)
+    .sort((a, b) => (b.diciptaPada || 0) - (a.diciptaPada || 0));
+  const pending = sejarah
+    .filter(r => r.statusPengesahan !== 'disahkan')
     .sort((a, b) => (a.diciptaPada || 0) - (b.diciptaPada || 0));
-  const groups = pending.reduce((all, resit) => {
-    const kelas = kelasResit(resit);
-    if (!all[kelas]) all[kelas] = [];
-    all[kelas].push(resit);
-    return all;
-  }, {});
-  const total = pending.reduce((sum, r) => sum + Number(r.jumlah || 0), 0);
-  const intro = `<div class="treasurer-intro"><h2>Pengesahan Kutipan</h2><p>${pending.length} transaksi menunggu pengesahan, berjumlah ${rm(total)}. Sahkan hanya selepas wang diterima daripada guru kelas.</p></div>`;
-  const kelasList = Object.keys(groups).sort(susunKelas);
-  if (!kelasList.length) {
-    dashboard.innerHTML = intro + '<div class="treasurer-empty">Tiada kutipan menunggu pengesahan.</div>';
-    return;
+  const tabs = `<div class="treasurer-tabs">
+    <button class="treasurer-tab ${treasurerTab === 'pengesahan' ? 'active' : ''}" onclick="setTreasurerTab('pengesahan')">Pengesahan (${pending.length})</button>
+    <button class="treasurer-tab ${treasurerTab === 'sejarah' ? 'active' : ''}" onclick="setTreasurerTab('sejarah')">Sejarah Transaksi</button>
+    <button class="treasurer-tab ${treasurerTab === 'kelas' ? 'active' : ''}" onclick="setTreasurerTab('kelas')">Prestasi Kelas</button>
+  </div>`;
+  let content = '';
+  if (treasurerTab === 'pengesahan') {
+    const groups = pending.reduce((all, resit) => {
+      const kelas = kelasResit(resit);
+      if (!all[kelas]) all[kelas] = [];
+      all[kelas].push(resit);
+      return all;
+    }, {});
+    const total = pending.reduce((sum, r) => sum + Number(r.jumlah || 0), 0);
+    const intro = `<div class="treasurer-intro"><h2>Pengesahan Kutipan</h2><p>${pending.length} transaksi menunggu pengesahan, berjumlah ${rm(total)}. Sahkan hanya selepas wang diterima daripada guru kelas.</p></div>`;
+    const kelasList = Object.keys(groups).sort(susunKelas);
+    if (!kelasList.length) {
+      content = intro + '<div class="treasurer-empty">Tiada kutipan menunggu pengesahan.</div>';
+    } else {
+      const sections = kelasList.map(kelas => {
+        const transaksi = groups[kelas];
+        const rows = transaksi.map(r => {
+          const anak = Array.isArray(r.anak) ? r.anak.filter(Boolean).join(', ') : (r.anak || '');
+          const masa = formatMasaRekod(r.diciptaPada, r.tarikh);
+          return `<div class="verify-item">
+            <div class="verify-info"><div class="verify-name">${r.penjaga || 'Keluarga tanpa nama'}</div><div class="verify-meta">${r.resitNo || ''} | ${anak || 'Tiada murid'}${masa ? ' | ' + masa : ''}</div></div>
+            <div class="verify-amount">${rm(r.jumlah)}</div>
+            <button class="btn-sahkan" onclick="sahkanResit('${r.resitNo}')">Sahkan Terima</button>
+          </div>`;
+        }).join('');
+        return `<details class="verify-class"><summary><span>${kelas}</span><span class="verify-count">${transaksi.length}</span></summary><div class="verify-list">${rows}</div></details>`;
+      }).join('');
+      content = intro + sections;
+    }
+  } else if (treasurerTab === 'sejarah') {
+    const intro = `<div class="treasurer-intro"><h2>Sejarah Transaksi</h2><p>Semua rekod bayaran yang telah direkodkan oleh guru kelas, termasuk transaksi yang masih menunggu pengesahan.</p></div>`;
+    if (!sejarah.length) {
+      content = intro + '<div class="treasurer-empty">Tiada transaksi direkodkan.</div>';
+    } else {
+      const rows = sejarah.map(r => {
+        const disahkan = r.statusPengesahan === 'disahkan';
+        const masa = formatMasaRekod(r.diciptaPada, r.tarikh);
+        return `<div class="history-item">
+          <div class="history-info"><div class="history-name">${r.penjaga || 'Keluarga tanpa nama'}</div><div class="history-meta">${r.resitNo || ''} | ${kelasResit(r)} | ${r.jenis || 'Bayaran'}${masa ? ' | ' + masa : ''}</div></div>
+          <span class="history-status ${disahkan ? 'confirmed' : 'pending'}">${disahkan ? 'Disahkan' : 'Menunggu'}</span>
+          <div class="verify-amount">${rm(r.jumlah)}</div>
+        </div>`;
+      }).join('');
+      content = intro + `<div class="history-list">${rows}</div>`;
+    }
+  } else {
+    const summary = {};
+    Object.values(familiesCache).filter(Boolean).forEach(fam => {
+      const kelasAnak = [...new Set(Object.values(fam.anak || {}).map(a => a.kelas).filter(Boolean))];
+      const terkumpul = Math.min(FAM_TARGET, Number(fam.terkumpul || 0));
+      kelasAnak.forEach(kelas => {
+        if (!summary[kelas]) summary[kelas] = { keluarga: 0, lunas: 0, terkumpul: 0 };
+        summary[kelas].keluarga += 1;
+        summary[kelas].terkumpul += terkumpul;
+        if (terkumpul >= FAM_TARGET) summary[kelas].lunas += 1;
+      });
+    });
+    const kelasList = Object.keys(summary).sort(susunKelas);
+    const intro = '<div class="treasurer-intro"><h2>Prestasi Kutipan Mengikut Kelas</h2><p>Peratus dikira daripada jumlah kutipan keluarga unik dalam kelas berbanding sasaran RM70 bagi setiap keluarga.</p></div>';
+    if (!kelasList.length) {
+      content = intro + '<div class="treasurer-empty">Tiada data keluarga untuk dipaparkan.</div>';
+    } else {
+      const rows = kelasList.map(kelas => {
+        const item = summary[kelas];
+        const sasaran = item.keluarga * FAM_TARGET;
+        const peratus = sasaran ? Math.min(100, Math.round(item.terkumpul / sasaran * 100)) : 0;
+        return `<div class="class-performance-item">
+          <div class="class-performance-head"><div><div class="class-performance-name">${kelas}</div><div class="class-performance-meta">${rm(item.terkumpul)} / ${rm(sasaran)} | ${item.lunas} daripada ${item.keluarga} keluarga lunas</div></div><div class="class-performance-pct">${peratus}%</div></div>
+          <div class="class-progress-track"><div class="class-progress-fill" style="width:${peratus}%"></div></div>
+        </div>`;
+      }).join('');
+      content = intro + `<div class="class-performance">${rows}</div>`;
+    }
   }
-  const sections = kelasList.map(kelas => {
-    const transaksi = groups[kelas];
-    const rows = transaksi.map(r => {
-      const anak = Array.isArray(r.anak) ? r.anak.filter(Boolean).join(', ') : (r.anak || '');
-      const masa = formatMasaRekod(r.diciptaPada, r.tarikh);
-      return `<div class="verify-item">
-        <div class="verify-info"><div class="verify-name">${r.penjaga || 'Keluarga tanpa nama'}</div><div class="verify-meta">${r.resitNo || ''} | ${anak || 'Tiada murid'}${masa ? ' | ' + masa : ''}</div></div>
-        <div class="verify-amount">${rm(r.jumlah)}</div>
-        <button class="btn-sahkan" onclick="sahkanResit('${r.resitNo}')">Sahkan Terima</button>
-      </div>`;
-    }).join('');
-    return `<details class="verify-class"><summary><span>${kelas}</span><span class="verify-count">${transaksi.length}</span></summary><div class="verify-list">${rows}</div></details>`;
-  }).join('');
-  dashboard.innerHTML = intro + sections;
+  dashboard.innerHTML = tabs + content;
 }
 async function sahkanResit(resitNo) {
   if (!isTreasurer()) { alert('Hanya bendahari boleh mengesahkan kutipan.'); return; }
