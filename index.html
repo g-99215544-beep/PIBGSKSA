@@ -902,7 +902,7 @@ function renderFamilyModal() {
         </div>
         <div class="pay-input-row">
           <span class="rm">RM</span>
-          <input type="number" id="pay-amt" min="1" max="${st.baki}" step="0.5" placeholder="Jumlah dibayar...">
+          <input type="number" id="pay-amt" min="1" step="0.5" placeholder="Jumlah dibayar...">
           <button class="btn-rekod" id="btn-rekod" onclick="rekodBayaran()">Jana Resit</button>
         </div>
       </div>`;
@@ -946,9 +946,12 @@ async function rekodBayaran() {
   const inp = document.getElementById('pay-amt');
   const amt = parseFloat(inp.value);
   if (!amt || amt <= 0) { alert('Sila masukkan jumlah bayaran yang sah.'); return; }
-  if (amt > st.baki + 1e-9) { alert('Jumlah melebihi baki (' + rm(st.baki) + '). Sila betulkan.'); return; }
   const anakNames = Object.values(fam.anak || {}).map(a => a.nama);
-  if (!confirm(`Rekod bayaran ${rm(amt)} untuk keluarga:\n${fam.penjaga}\n(${anakNames.length} anak)\n\nBaki selepas ini: ${rm(st.baki - amt)}`)) return;
+  const bakiSelepas = Math.max(0, st.baki - amt);
+  const lebihan = Math.max(0, amt - st.baki);
+  let konfirmMsg = `Rekod bayaran ${rm(amt)} untuk keluarga:\n${fam.penjaga}\n(${anakNames.length} anak)\n\nBaki selepas ini: ${rm(bakiSelepas)}`;
+  if (lebihan > 0) konfirmMsg += `\nLebihan bayaran (melebihi RM${FAM_TARGET}): ${rm(lebihan)}`;
+  if (!confirm(konfirmMsg)) return;
 
   const btn = document.getElementById('btn-rekod');
   if (btn) { btn.disabled = true; btn.textContent = '⏳ Menyimpan…'; }
