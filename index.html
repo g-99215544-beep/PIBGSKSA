@@ -662,6 +662,15 @@ function famStatus(fam) {
 }
 function rm(n) { return 'RM ' + Number(n || 0).toFixed(2); }
 
+// Kutipan kelas mesti berdasarkan resit yang direkodkan oleh kelas itu sahaja.
+// Jangan gunakan fam.terkumpul di sini kerana satu keluarga boleh mempunyai anak
+// dalam beberapa kelas, tetapi satu bayaran hanya diterima sekali.
+function jumlahTerkumpulKelas(kelas) {
+  return Object.values(receiptsCache)
+    .filter(resit => resit && resit.kelasRekod === kelas)
+    .reduce((jumlah, resit) => jumlah + Number(resit.jumlah || 0), 0);
+}
+
 // ===== PENGESAHAN BENDAHARI =====
 function kelasResit(resit) {
   if (resit.kelasRekod) return resit.kelasRekod;
@@ -748,16 +757,17 @@ function renderTreasurerDashboard() {
     const summary = {};
     Object.values(familiesCache).filter(Boolean).forEach(fam => {
       const kelasAnak = [...new Set(Object.values(fam.anak || {}).map(a => a.kelas).filter(Boolean))];
-      const terkumpul = Math.min(FAM_TARGET, Number(fam.terkumpul || 0));
       kelasAnak.forEach(kelas => {
         if (!summary[kelas]) summary[kelas] = { keluarga: 0, lunas: 0, terkumpul: 0 };
         summary[kelas].keluarga += 1;
-        summary[kelas].terkumpul += terkumpul;
-        if (terkumpul >= FAM_TARGET) summary[kelas].lunas += 1;
+        if (famStatus(fam).terkumpul >= FAM_TARGET) summary[kelas].lunas += 1;
       });
     });
+    Object.keys(summary).forEach(kelas => {
+      summary[kelas].terkumpul = jumlahTerkumpulKelas(kelas);
+    });
     const kelasList = Object.keys(summary).sort(susunKelas);
-    const intro = '<div class="treasurer-intro"><h2>Prestasi Kutipan Mengikut Kelas</h2><p>Peratus dikira daripada jumlah kutipan keluarga unik dalam kelas berbanding sasaran RM70 bagi setiap keluarga.</p></div>';
+    const intro = '<div class="treasurer-intro"><h2>Prestasi Kutipan Mengikut Kelas</h2><p>Kutipan hanya dikreditkan kepada kelas yang merekodkan bayaran. Bayaran keluarga tidak dikira semula dalam kelas adik-beradik.</p></div>';
     if (!kelasList.length) {
       content = intro + '<div class="treasurer-empty">Tiada data keluarga untuk dipaparkan.</div>';
     } else {
@@ -807,14 +817,12 @@ function renderStudentList() {
     resetStats();
     return;
   }
-  let lunasCount = 0, belumPenuh = 0, terkumpulKelas = 0;
-  const famSeen = {};
+  let lunasCount = 0, belumPenuh = 0;
   list.forEach(([k]) => {
     const fam = famOf(k); const st = famStatus(fam);
     if (st.cls === 'lunas') lunasCount++; else belumPenuh++;
-    const fid = studentFamily[k];
-    if (fid && !famSeen[fid]) { famSeen[fid] = 1; terkumpulKelas += st.terkumpul; }
   });
+  const terkumpulKelas = jumlahTerkumpulKelas(selectedKelas);
   document.getElementById('st-total').textContent = list.length;
   document.getElementById('st-bayar').textContent = lunasCount;
   document.getElementById('st-belum').textContent = belumPenuh;
