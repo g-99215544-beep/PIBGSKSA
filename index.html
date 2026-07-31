@@ -215,6 +215,20 @@ select:focus{outline:none;border-color:var(--green)}
 .btn-sahkan:hover{background:var(--green-dark)}
 .btn-sahkan:disabled{background:#bbb;cursor:not-allowed}
 .treasurer-empty{padding:36px 16px;text-align:center;color:var(--text2);background:var(--card);border:1px solid var(--border);border-radius:8px;font-size:14px}
+.treasurer-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+.summary-card{background:var(--card);border:1px solid var(--border);border-left:4px solid var(--gray);border-radius:8px;padding:12px 14px}
+.summary-card.disahkan{border-left-color:var(--green-dark)}
+.summary-card.menunggu{border-left-color:#B45309}
+.summary-label{font-size:11px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;color:var(--text2)}
+.summary-value{font-size:20px;font-weight:700;margin-top:4px;line-height:1.2;white-space:nowrap}
+.summary-card.disahkan .summary-value{color:var(--green-dark)}
+.summary-card.menunggu .summary-value{color:#B45309}
+.summary-sub{font-size:11px;color:var(--text2);margin-top:3px}
+@media(max-width:420px){
+  .treasurer-summary{grid-template-columns:1fr}
+  .summary-card{padding:10px 12px}
+  .summary-value{font-size:18px}
+}
 .treasurer-tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:16px;overflow-x:auto}
 .treasurer-tab{background:none;border:none;border-bottom:3px solid transparent;padding:9px 12px;color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap}
 .treasurer-tab:hover{color:var(--green-dark)}
@@ -689,6 +703,34 @@ function formatMasaRekod(timestamp, fallback) {
   if (!timestamp || typeof timestamp !== 'number') return fallback || '';
   return new Date(timestamp).toLocaleString('ms-MY', {day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit'});
 }
+// Ringkasan kutipan seluruh sekolah untuk bendahari padankan dengan wang di
+// tangan. Dikira daripada receiptsCache kerana resit yang dipadam guru kelas
+// dibuang terus dari node receipts, dan resit yang telah disahkan tidak boleh
+// dipadam - jadi jumlah 'disahkan' = wang yang benar-benar diterima bendahari.
+function ringkasanKutipan() {
+  const kosong = { jumlah: 0, bil: 0 };
+  const ringkasan = { disahkan: {...kosong}, menunggu: {...kosong}, semua: {...kosong} };
+  Object.values(receiptsCache).filter(Boolean).forEach(resit => {
+    const amaun = Number(resit.jumlah || 0);
+    const kumpulan = resit.statusPengesahan === 'disahkan' ? ringkasan.disahkan : ringkasan.menunggu;
+    kumpulan.jumlah += amaun; kumpulan.bil += 1;
+    ringkasan.semua.jumlah += amaun; ringkasan.semua.bil += 1;
+  });
+  return ringkasan;
+}
+function renderRingkasanKutipan() {
+  const r = ringkasanKutipan();
+  const kad = (cls, label, data, nota) => `<div class="summary-card ${cls}">
+    <div class="summary-label">${label}</div>
+    <div class="summary-value">${rm(data.jumlah)}</div>
+    <div class="summary-sub">${data.bil} transaksi${nota ? ' | ' + nota : ''}</div>
+  </div>`;
+  return `<div class="treasurer-summary">
+    ${kad('disahkan', 'Disahkan', r.disahkan, 'wang di tangan')}
+    ${kad('menunggu', 'Menunggu', r.menunggu, 'belum diterima')}
+    ${kad('', 'Jumlah Rekod', r.semua, '')}
+  </div>`;
+}
 function setTreasurerTab(tab) {
   if (!['pengesahan', 'sejarah', 'kelas'].includes(tab)) return;
   treasurerTab = tab;
@@ -783,7 +825,7 @@ function renderTreasurerDashboard() {
       content = intro + `<div class="class-performance">${rows}</div>`;
     }
   }
-  dashboard.innerHTML = tabs + content;
+  dashboard.innerHTML = renderRingkasanKutipan() + tabs + content;
 }
 async function sahkanResit(resitNo) {
   if (!isTreasurer()) { alert('Hanya bendahari boleh mengesahkan kutipan.'); return; }
