@@ -252,6 +252,101 @@ select:focus{outline:none;border-color:var(--green)}
 .class-progress-track{height:8px;background:#edf0ed;border-radius:6px;overflow:hidden;margin-top:10px}
 .class-progress-fill{height:100%;background:var(--green);border-radius:6px}
 
+/* ANALISIS BENDAHARI */
+.analysis-dashboard{--analysis-green:#075e3b;--analysis-green-2:#0b7a4b;--analysis-gold:#d6a51f;background:#f8faf6;border:1px solid #dce5d9;border-radius:18px;overflow:hidden;box-shadow:0 8px 28px rgba(5,75,46,.08)}
+.analysis-hero{position:relative;isolation:isolate;overflow:hidden;background:linear-gradient(125deg,#043d29 0%,#075e3b 60%,#0c7b4c 100%);color:#fff;padding:24px 26px 22px}
+.analysis-hero:before,.analysis-hero:after{content:"";position:absolute;z-index:-1;border-radius:50%;border:3px solid rgba(238,190,54,.75)}
+.analysis-hero:before{width:360px;height:140px;right:-90px;top:-104px;transform:rotate(12deg)}
+.analysis-hero:after{width:290px;height:100px;left:-120px;bottom:-86px;border-color:rgba(255,255,255,.1)}
+.analysis-hero-main{display:flex;align-items:center;gap:16px}
+.analysis-logo{width:58px;height:58px;flex:0 0 58px;border-radius:50%;object-fit:cover;border:3px solid rgba(255,255,255,.75);box-shadow:0 3px 12px rgba(0,0,0,.2)}
+.analysis-eyebrow{font-size:11px;font-weight:700;letter-spacing:1.8px;color:#f3ce65;text-transform:uppercase;margin-bottom:3px}
+.analysis-title{font-size:25px;line-height:1.12;font-weight:800;letter-spacing:.3px}
+.analysis-title span{color:#f3c84c}
+.analysis-subtitle{font-size:12px;color:rgba(255,255,255,.82);margin-top:6px}
+.analysis-level-wrap{padding:15px 18px 4px;background:#fff}
+.analysis-level-label{font-size:11px;font-weight:800;letter-spacing:.8px;color:#617069;text-transform:uppercase;margin-bottom:8px}
+.analysis-levels{display:flex;gap:7px;overflow-x:auto;padding-bottom:10px;scrollbar-width:thin}
+.analysis-level-btn{border:1px solid #d8e3dc;background:#fff;color:#4e6258;border-radius:20px;padding:8px 13px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;transition:.15s ease}
+.analysis-level-btn:hover{border-color:var(--analysis-green-2);color:var(--analysis-green)}
+.analysis-level-btn.active{background:var(--analysis-green);border-color:var(--analysis-green);color:#fff;box-shadow:0 3px 9px rgba(7,94,59,.18)}
+.analysis-content{padding:18px}
+.analysis-section{margin-bottom:20px}
+.analysis-section:last-child{margin-bottom:0}
+.analysis-section-title{display:flex;align-items:center;gap:10px;margin-bottom:11px;color:var(--analysis-green);font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:.3px}
+.analysis-section-title:before,.analysis-section-title:after{content:"";height:1px;background:#d4b24e;flex:1}
+.analysis-section-title span{background:var(--analysis-green);color:#fff;border-radius:7px;padding:7px 15px;text-align:center;box-shadow:0 2px 6px rgba(7,94,59,.13)}
+.analysis-overview{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.analysis-stat{position:relative;min-height:146px;background:#fff;border:1px solid #dfe6df;border-radius:12px;padding:14px 12px 16px;text-align:center;overflow:hidden;box-shadow:0 3px 9px rgba(31,64,47,.06)}
+.analysis-stat:after{content:"";position:absolute;left:0;right:0;bottom:0;height:7px;background:linear-gradient(90deg,var(--analysis-green),#16a161)}
+.analysis-stat-icon{width:38px;height:38px;margin:0 auto 8px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#e9f5ee;color:var(--analysis-green);font-size:20px;font-weight:800}
+.analysis-stat-label{min-height:31px;display:flex;align-items:center;justify-content:center;color:var(--analysis-green);font-size:11px;line-height:1.25;font-weight:800;text-transform:uppercase}
+.analysis-stat-value{font-size:21px;line-height:1.15;color:#064d32;font-weight:800;margin-top:7px;white-space:nowrap}
+.analysis-stat-note{font-size:10px;color:#6e7b74;margin-top:4px}
+.analysis-donut{--pct:0;width:66px;height:66px;border-radius:50%;margin:5px auto 0;background:conic-gradient(#078849 calc(var(--pct)*1%),#e6e9e5 0);position:relative;display:flex;align-items:center;justify-content:center}
+.analysis-donut:after{content:"";position:absolute;inset:10px;background:#fff;border-radius:50%}
+.analysis-donut strong{position:relative;z-index:1;color:#075e3b;font-size:16px}
+.analysis-stat.donut-stat{padding-top:11px}
+.analysis-stat.donut-stat .analysis-stat-icon{display:none}
+.analysis-stat.donut-stat .analysis-stat-label{min-height:auto}
+.analysis-table-wrap{background:#fff;border:1px solid #b9d2c3;border-radius:12px;overflow:hidden}
+.analysis-table{width:100%;border-collapse:collapse;font-size:12px}
+.analysis-table th{background:linear-gradient(110deg,#075e3b,#087c49);color:#fff;padding:11px 10px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.35px;white-space:nowrap}
+.analysis-table th:not(:first-child){text-align:center}
+.analysis-table td{padding:13px 10px;border-bottom:1px solid #e5ebe6;vertical-align:middle}
+.analysis-table tr:last-child td{border-bottom:none}
+.analysis-table tbody tr:nth-child(even){background:#fbfcfa}
+.analysis-rank{display:flex;align-items:center;gap:9px;min-width:150px}
+.analysis-medal{width:32px;height:32px;flex:0 0 32px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#edf1ee;color:#53615a;font-size:13px;font-weight:800;border:2px solid #cbd4ce}
+.analysis-medal.rank-1{background:#fff5ca;color:#8a6500;border-color:#e1b830}
+.analysis-medal.rank-2{background:#f1f3f4;color:#667078;border-color:#b9c0c5}
+.analysis-medal.rank-3{background:#fff0e4;color:#99501d;border-color:#d68a52}
+.analysis-class-name{font-size:12px;color:#075e3b;font-weight:800}
+.analysis-money{font-weight:700;color:#283b31;text-align:center;white-space:nowrap;line-height:1.45}
+.analysis-money small,.analysis-family small{display:block;color:#7b8780;font-weight:500;font-size:10px}
+.analysis-family{text-align:center;font-weight:800;color:#075e3b;white-space:nowrap}
+.analysis-pct{text-align:center;color:#075e3b;font-size:18px;font-weight:800;white-space:nowrap}
+.analysis-bar-cell{min-width:150px}
+.analysis-bar-track{height:12px;background:#e5e9e5;border-radius:8px;overflow:hidden}
+.analysis-bar-fill{height:100%;background:linear-gradient(90deg,#07904e,#0aab60);border-radius:8px}
+.analysis-bar-scale{display:flex;justify-content:space-between;color:#89938d;font-size:8px;margin-top:4px}
+.analysis-summary-box{background:linear-gradient(135deg,#fff9df,#fffdf2);border:1px solid #dfbc53;border-radius:12px;padding:16px 18px}
+.analysis-summary-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px 18px}
+.analysis-summary-item{display:flex;gap:9px;color:#34443b;font-size:12px;line-height:1.5}
+.analysis-check{width:20px;height:20px;flex:0 0 20px;border-radius:50%;background:#2fa85f;color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;margin-top:1px}
+.analysis-summary-item strong{color:#075e3b}
+.analysis-empty{background:#fff;border:1px dashed #b9ccbf;border-radius:12px;padding:30px 16px;text-align:center;color:#68766e;font-size:13px}
+@media(max-width:720px){
+  #treasurer-dashboard{padding:12px}
+  .analysis-overview{grid-template-columns:repeat(2,1fr)}
+  .analysis-table-wrap{overflow-x:auto}
+  .analysis-table{min-width:650px}
+  .analysis-summary-grid{grid-template-columns:1fr}
+}
+@media(max-width:600px){
+  .analysis-table-wrap{overflow:visible;border:none;background:transparent}
+  .analysis-table{min-width:0;display:block}
+  .analysis-table thead{display:none}
+  .analysis-table tbody{display:flex;flex-direction:column;gap:9px}
+  .analysis-table tbody tr{display:grid;grid-template-columns:1fr 1fr;background:#fff !important;border:1px solid #cbdcd1;border-radius:11px;padding:10px;box-shadow:0 2px 7px rgba(31,64,47,.05)}
+  .analysis-table td{display:block;border:0;padding:7px 6px}
+  .analysis-table td:first-child,.analysis-table .analysis-pct,.analysis-table .analysis-bar-cell{grid-column:1/-1}
+  .analysis-table td[data-label]:before{content:attr(data-label);display:block;color:#7a867f;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.35px;margin-bottom:3px}
+  .analysis-table .analysis-pct{text-align:left;font-size:20px}
+  .analysis-bar-cell{min-width:0}
+}
+@media(max-width:430px){
+  .analysis-hero{padding:20px 17px}
+  .analysis-logo{width:48px;height:48px;flex-basis:48px}
+  .analysis-title{font-size:19px}
+  .analysis-content{padding:13px}
+  .analysis-overview{gap:8px}
+  .analysis-stat{min-height:137px;padding-left:8px;padding-right:8px}
+  .analysis-stat-value{font-size:18px}
+  .analysis-section-title{font-size:11px;gap:6px}
+  .analysis-section-title span{padding:7px 9px}
+}
+
 /* RECEIPT PAGE */
 #receipt-page{display:none;min-height:100vh;background:var(--bg);padding:2rem}
 .receipt-page-inner{max-width:420px;margin:0 auto}
@@ -492,6 +587,16 @@ const AUTH_TTL_MS = 24 * 60 * 60 * 1000; // 24 jam
 let authedClass = null; // kelas yang sedang log masuk (atau null)
 let authRole = null; // 'guru', 'bendahari', atau null
 let treasurerTab = 'pengesahan';
+let treasurerAnalysisLevel = 'tahun1';
+const TREASURER_ANALYSIS_LEVELS = [
+  { id: 'pra', label: 'Pra Sekolah', prefix: 'PRASEKOLAH' },
+  { id: 'tahun1', label: 'Tahun 1', prefix: 'TAHUN 1' },
+  { id: 'tahun2', label: 'Tahun 2', prefix: 'TAHUN 2' },
+  { id: 'tahun3', label: 'Tahun 3', prefix: 'TAHUN 3' },
+  { id: 'tahun4', label: 'Tahun 4', prefix: 'TAHUN 4' },
+  { id: 'tahun5', label: 'Tahun 5', prefix: 'TAHUN 5' },
+  { id: 'tahun6', label: 'Tahun 6', prefix: 'TAHUN 6' }
+];
 
 async function sha256hex(str) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
@@ -731,8 +836,134 @@ function renderRingkasanKutipan() {
     ${kad('', 'Jumlah Rekod', r.semua, '')}
   </div>`;
 }
+
+function formatRMAnalisis(n) {
+  return 'RM' + Number(n || 0).toLocaleString('ms-MY', {
+    minimumFractionDigits: Number(n || 0) % 1 ? 2 : 0,
+    maximumFractionDigits: 2
+  });
+}
+function setTreasurerAnalysisLevel(levelId) {
+  if (!TREASURER_ANALYSIS_LEVELS.some(level => level.id === levelId)) return;
+  treasurerAnalysisLevel = levelId;
+  renderTreasurerDashboard();
+}
+function dataAnalisisAras(level) {
+  const kelasSet = new Set();
+  const keluargaKelas = {};
+  const semuaKeluarga = new Set();
+
+  Object.entries(familiesCache).forEach(([familyId, fam]) => {
+    if (!fam) return;
+    const kelasAnak = [...new Set(Object.values(fam.anak || {}).map(anak => anak && anak.kelas).filter(Boolean))]
+      .filter(kelas => kelas.startsWith(level.prefix));
+    kelasAnak.forEach(kelas => {
+      kelasSet.add(kelas);
+      if (!keluargaKelas[kelas]) keluargaKelas[kelas] = new Set();
+      keluargaKelas[kelas].add(familyId);
+      semuaKeluarga.add(familyId);
+    });
+  });
+
+  const resitDisahkan = Object.values(receiptsCache).filter(resit =>
+    resit && resit.statusPengesahan === 'disahkan' && kelasResit(resit).startsWith(level.prefix)
+  );
+  const bayaranKelas = {};
+  const bayaranKeluargaKelas = {};
+  const bayaranKeluargaAras = {};
+  resitDisahkan.forEach(resit => {
+    const kelas = kelasResit(resit);
+    const jumlah = Number(resit.jumlah || 0);
+    kelasSet.add(kelas);
+    bayaranKelas[kelas] = (bayaranKelas[kelas] || 0) + jumlah;
+    if (resit.familyId) {
+      if (!bayaranKeluargaKelas[kelas]) bayaranKeluargaKelas[kelas] = {};
+      bayaranKeluargaKelas[kelas][resit.familyId] = (bayaranKeluargaKelas[kelas][resit.familyId] || 0) + jumlah;
+      bayaranKeluargaAras[resit.familyId] = (bayaranKeluargaAras[resit.familyId] || 0) + jumlah;
+    }
+  });
+
+  const kelas = [...kelasSet].map(nama => {
+    const keluargaIds = keluargaKelas[nama] || new Set();
+    const keluarga = keluargaIds.size;
+    const terkumpul = bayaranKelas[nama] || 0;
+    const sasaran = keluarga * FAM_TARGET;
+    const lunas = [...keluargaIds].filter(familyId =>
+      ((bayaranKeluargaKelas[nama] || {})[familyId] || 0) >= FAM_TARGET
+    ).length;
+    const peratus = sasaran ? Math.min(100, Math.round(terkumpul / sasaran * 100)) : 0;
+    return { nama, keluarga, lunas, terkumpul, sasaran, peratus };
+  }).filter(item => item.keluarga || item.terkumpul)
+    .sort((a, b) => b.peratus - a.peratus || b.terkumpul - a.terkumpul || susunKelas(a.nama, b.nama));
+
+  const terkumpul = resitDisahkan.reduce((sum, resit) => sum + Number(resit.jumlah || 0), 0);
+  const keluarga = semuaKeluarga.size;
+  const sasaran = keluarga * FAM_TARGET;
+  const lunas = [...semuaKeluarga].filter(familyId => (bayaranKeluargaAras[familyId] || 0) >= FAM_TARGET).length;
+  const peratus = sasaran ? Math.min(100, Math.round(terkumpul / sasaran * 100)) : 0;
+  return { kelas, terkumpul, sasaran, keluarga, lunas, peratus };
+}
+function renderAnalisisBendahari() {
+  const level = TREASURER_ANALYSIS_LEVELS.find(item => item.id === treasurerAnalysisLevel) || TREASURER_ANALYSIS_LEVELS[1];
+  const data = dataAnalisisAras(level);
+  const pilihanAras = TREASURER_ANALYSIS_LEVELS.map(item =>
+    `<button class="analysis-level-btn ${item.id === level.id ? 'active' : ''}" type="button" aria-pressed="${item.id === level.id}" onclick="setTreasurerAnalysisLevel('${item.id}')">${item.label}</button>`
+  ).join('');
+
+  const ringkasan = `<section class="analysis-section">
+    <div class="analysis-section-title"><span>1. Ringkasan Keseluruhan</span></div>
+    <div class="analysis-overview">
+      <div class="analysis-stat"><div class="analysis-stat-icon">RM</div><div class="analysis-stat-label">Jumlah Kutipan</div><div class="analysis-stat-value">${formatRMAnalisis(data.terkumpul)}</div><div class="analysis-stat-note">Kutipan telah disahkan</div></div>
+      <div class="analysis-stat"><div class="analysis-stat-icon">◎</div><div class="analysis-stat-label">Jumlah Sasaran</div><div class="analysis-stat-value">${formatRMAnalisis(data.sasaran)}</div><div class="analysis-stat-note">RM${FAM_TARGET} setiap keluarga</div></div>
+      <div class="analysis-stat donut-stat"><div class="analysis-stat-label">Pencapaian Kutipan</div><div class="analysis-donut" style="--pct:${data.peratus}"><strong>${data.peratus}%</strong></div><div class="analysis-stat-note">Daripada sasaran keseluruhan</div></div>
+      <div class="analysis-stat"><div class="analysis-stat-icon">✓</div><div class="analysis-stat-label">Keluarga Lunas</div><div class="analysis-stat-value">${data.lunas} / ${data.keluarga}</div><div class="analysis-stat-note">${data.keluarga ? Math.round(data.lunas / data.keluarga * 100) : 0}% keluarga</div></div>
+    </div>
+  </section>`;
+
+  let prestasi = '<div class="analysis-empty">Tiada data keluarga atau kutipan disahkan untuk aras ini.</div>';
+  if (data.kelas.length) {
+    const rows = data.kelas.map((item, index) => `<tr>
+      <td><div class="analysis-rank"><span class="analysis-medal rank-${index + 1}">${index + 1}</span><span class="analysis-class-name">${item.nama}</span></div></td>
+      <td class="analysis-money" data-label="Kutipan / Sasaran">${formatRMAnalisis(item.terkumpul)}<small>daripada ${formatRMAnalisis(item.sasaran)}</small></td>
+      <td class="analysis-family" data-label="Keluarga Lunas">${item.lunas} / ${item.keluarga}<small>keluarga</small></td>
+      <td class="analysis-pct" data-label="Pencapaian">${item.peratus}%</td>
+      <td class="analysis-bar-cell" data-label="Graf Peratus"><div class="analysis-bar-track"><div class="analysis-bar-fill" style="width:${item.peratus}%"></div></div><div class="analysis-bar-scale"><span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span></div></td>
+    </tr>`).join('');
+    prestasi = `<div class="analysis-table-wrap"><table class="analysis-table">
+      <thead><tr><th>Kelas</th><th>Kutipan / Sasaran</th><th>Keluarga Lunas</th><th>Pencapaian</th><th>Graf Peratus</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>`;
+  }
+
+  const terbaik = data.kelas[0];
+  const rumusanTerbaik = terbaik
+    ? `<strong>${terbaik.nama}</strong> merekodkan pencapaian tertinggi pada <strong>${terbaik.peratus}%</strong>.`
+    : 'Belum ada prestasi kelas untuk dirumuskan.';
+  const rumusan = `<section class="analysis-section">
+    <div class="analysis-section-title"><span>3. Rumusan Keseluruhan</span></div>
+    <div class="analysis-summary-box"><div class="analysis-summary-grid">
+      <div class="analysis-summary-item"><span class="analysis-check">✓</span><span>Jumlah kutipan ${level.label} ialah <strong>${formatRMAnalisis(data.terkumpul)}</strong> daripada sasaran <strong>${formatRMAnalisis(data.sasaran)}</strong>.</span></div>
+      <div class="analysis-summary-item"><span class="analysis-check">✓</span><span>Peratus kutipan keseluruhan ialah <strong>${data.peratus}%</strong>.</span></div>
+      <div class="analysis-summary-item"><span class="analysis-check">✓</span><span>Seramai <strong>${data.lunas} daripada ${data.keluarga} keluarga</strong> telah melunaskan sumbangan PIBG melalui aras ini.</span></div>
+      <div class="analysis-summary-item"><span class="analysis-check">✓</span><span>${rumusanTerbaik}</span></div>
+    </div></div>
+  </section>`;
+
+  return `<div class="analysis-dashboard">
+    <div class="analysis-hero"><div class="analysis-hero-main">
+      <img class="analysis-logo" src="https://i.imgur.com/wpfWEN4.jpeg" alt="Logo SK Sri Aman">
+      <div><div class="analysis-eyebrow">PIBG SK Sri Aman</div><div class="analysis-title">Statistik Kutipan <span>Sumbangan PIBG ${new Date().getFullYear()}</span></div><div class="analysis-subtitle">${level.label} · Berdasarkan transaksi yang telah disahkan bendahari</div></div>
+    </div></div>
+    <div class="analysis-level-wrap"><div class="analysis-level-label">Pilih pecahan analisis</div><div class="analysis-levels">${pilihanAras}</div></div>
+    <div class="analysis-content">
+      ${ringkasan}
+      <section class="analysis-section"><div class="analysis-section-title"><span>2. Prestasi Mengikut Kelas</span></div>${prestasi}</section>
+      ${rumusan}
+    </div>
+  </div>`;
+}
 function setTreasurerTab(tab) {
-  if (!['pengesahan', 'sejarah', 'kelas'].includes(tab)) return;
+  if (!['pengesahan', 'sejarah', 'analisis'].includes(tab)) return;
   treasurerTab = tab;
   renderTreasurerDashboard();
 }
@@ -748,7 +979,7 @@ function renderTreasurerDashboard() {
   const tabs = `<div class="treasurer-tabs">
     <button class="treasurer-tab ${treasurerTab === 'pengesahan' ? 'active' : ''}" onclick="setTreasurerTab('pengesahan')">Pengesahan (${pending.length})</button>
     <button class="treasurer-tab ${treasurerTab === 'sejarah' ? 'active' : ''}" onclick="setTreasurerTab('sejarah')">Sejarah Transaksi</button>
-    <button class="treasurer-tab ${treasurerTab === 'kelas' ? 'active' : ''}" onclick="setTreasurerTab('kelas')">Prestasi Kelas</button>
+    <button class="treasurer-tab ${treasurerTab === 'analisis' ? 'active' : ''}" onclick="setTreasurerTab('analisis')">Analisis</button>
   </div>`;
   let content = '';
   if (treasurerTab === 'pengesahan') {
@@ -796,36 +1027,9 @@ function renderTreasurerDashboard() {
       content = intro + `<div class="history-list">${rows}</div>`;
     }
   } else {
-    const summary = {};
-    Object.values(familiesCache).filter(Boolean).forEach(fam => {
-      const kelasAnak = [...new Set(Object.values(fam.anak || {}).map(a => a.kelas).filter(Boolean))];
-      kelasAnak.forEach(kelas => {
-        if (!summary[kelas]) summary[kelas] = { keluarga: 0, lunas: 0, terkumpul: 0 };
-        summary[kelas].keluarga += 1;
-        if (famStatus(fam).terkumpul >= FAM_TARGET) summary[kelas].lunas += 1;
-      });
-    });
-    Object.keys(summary).forEach(kelas => {
-      summary[kelas].terkumpul = jumlahTerkumpulKelas(kelas);
-    });
-    const kelasList = Object.keys(summary).sort(susunKelas);
-    const intro = '<div class="treasurer-intro"><h2>Prestasi Kutipan Mengikut Kelas</h2><p>Kutipan hanya dikreditkan kepada kelas yang merekodkan bayaran. Bayaran keluarga tidak dikira semula dalam kelas adik-beradik.</p></div>';
-    if (!kelasList.length) {
-      content = intro + '<div class="treasurer-empty">Tiada data keluarga untuk dipaparkan.</div>';
-    } else {
-      const rows = kelasList.map(kelas => {
-        const item = summary[kelas];
-        const sasaran = item.keluarga * FAM_TARGET;
-        const peratus = sasaran ? Math.min(100, Math.round(item.terkumpul / sasaran * 100)) : 0;
-        return `<div class="class-performance-item">
-          <div class="class-performance-head"><div><div class="class-performance-name">${kelas}</div><div class="class-performance-meta">${rm(item.terkumpul)} / ${rm(sasaran)} | ${item.lunas} daripada ${item.keluarga} keluarga lunas</div></div><div class="class-performance-pct">${peratus}%</div></div>
-          <div class="class-progress-track"><div class="class-progress-fill" style="width:${peratus}%"></div></div>
-        </div>`;
-      }).join('');
-      content = intro + `<div class="class-performance">${rows}</div>`;
-    }
+    content = renderAnalisisBendahari();
   }
-  dashboard.innerHTML = renderRingkasanKutipan() + tabs + content;
+  dashboard.innerHTML = (treasurerTab === 'analisis' ? '' : renderRingkasanKutipan()) + tabs + content;
 }
 async function sahkanResit(resitNo) {
   if (!isTreasurer()) { alert('Hanya bendahari boleh mengesahkan kutipan.'); return; }
