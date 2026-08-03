@@ -258,12 +258,16 @@ select:focus{outline:none;border-color:var(--green)}
 .analysis-hero:before,.analysis-hero:after{content:"";position:absolute;z-index:-1;border-radius:50%;border:3px solid rgba(238,190,54,.75)}
 .analysis-hero:before{width:360px;height:140px;right:-90px;top:-104px;transform:rotate(12deg)}
 .analysis-hero:after{width:290px;height:100px;left:-120px;bottom:-86px;border-color:rgba(255,255,255,.1)}
-.analysis-hero-main{display:flex;align-items:center;gap:16px}
+.analysis-hero-main{display:flex;align-items:center;gap:16px;padding-right:120px}
 .analysis-logo{width:58px;height:58px;flex:0 0 58px;border-radius:50%;object-fit:cover;border:3px solid rgba(255,255,255,.75);box-shadow:0 3px 12px rgba(0,0,0,.2)}
 .analysis-eyebrow{font-size:11px;font-weight:700;letter-spacing:1.8px;color:#f3ce65;text-transform:uppercase;margin-bottom:3px}
 .analysis-title{font-size:25px;line-height:1.12;font-weight:800;letter-spacing:.3px}
 .analysis-title span{color:#f3c84c}
 .analysis-subtitle{font-size:12px;color:rgba(255,255,255,.82);margin-top:6px}
+.analysis-print-action{position:absolute;top:20px;right:22px;display:flex;align-items:center;gap:7px;border:1px solid rgba(255,255,255,.55);background:rgba(255,255,255,.13);color:#fff;border-radius:9px;padding:9px 12px;font-size:11px;font-weight:800;cursor:pointer;backdrop-filter:blur(3px)}
+.analysis-print-action:hover{background:#fff;color:#075e3b}
+.analysis-print-icon{font-size:17px;line-height:1}
+#analysis-print-root{display:none}
 .analysis-level-wrap{padding:15px 18px 4px;background:#fff}
 .analysis-level-label{font-size:11px;font-weight:800;letter-spacing:.8px;color:#617069;text-transform:uppercase;margin-bottom:8px}
 .analysis-levels{display:flex;gap:7px;overflow-x:auto;padding-bottom:10px;scrollbar-width:thin}
@@ -337,8 +341,11 @@ select:focus{outline:none;border-color:var(--green)}
 }
 @media(max-width:430px){
   .analysis-hero{padding:20px 17px}
+  .analysis-hero-main{padding-right:38px}
   .analysis-logo{width:48px;height:48px;flex-basis:48px}
   .analysis-title{font-size:19px}
+  .analysis-print-action{top:13px;right:13px;padding:8px}
+  .analysis-print-text{display:none}
   .analysis-content{padding:13px}
   .analysis-overview{gap:8px}
   .analysis-stat{min-height:137px;padding-left:8px;padding-right:8px}
@@ -376,6 +383,57 @@ select:focus{outline:none;border-color:var(--green)}
   .receipt-page-inner{max-width:none;margin:0;padding:0}
   .receipt-page-card{box-shadow:none;border:1px solid #ddd;margin:0 auto;max-width:380px}
   .rp-print-btn,.rp-back-btn{display:none !important}
+
+  @page{size:A4 portrait;margin:7mm}
+  body.printing-analysis{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;background:#fff !important}
+  body.printing-analysis #admin-app,body.printing-analysis #receipt-page,body.printing-analysis #overlay,body.printing-analysis #admin-login-overlay{display:none !important}
+  body.printing-analysis #analysis-print-root{display:block !important}
+  body.printing-analysis .analysis-print-page{display:block;width:100%;height:auto;break-after:page;page-break-after:always;break-inside:avoid;page-break-inside:avoid}
+  body.printing-analysis .analysis-print-page:last-child{break-after:auto;page-break-after:auto}
+  body.printing-analysis .analysis-dashboard{border:0;border-radius:0;box-shadow:none;background:#fff}
+  body.printing-analysis .analysis-hero{padding:13px 16px 12px}
+  body.printing-analysis .analysis-hero-main{gap:11px;padding-right:0}
+  body.printing-analysis .analysis-logo{width:42px;height:42px;flex-basis:42px}
+  body.printing-analysis .analysis-eyebrow{font-size:8px;margin-bottom:1px}
+  body.printing-analysis .analysis-title{font-size:18px}
+  body.printing-analysis .analysis-subtitle{font-size:9px;margin-top:3px}
+  body.printing-analysis .analysis-level-wrap,body.printing-analysis .analysis-print-action{display:none !important}
+  body.printing-analysis .analysis-content{padding:10px 12px}
+  body.printing-analysis .analysis-section{margin-bottom:10px}
+  body.printing-analysis .analysis-section-title{font-size:10px;margin-bottom:6px;gap:7px}
+  body.printing-analysis .analysis-section-title span{padding:5px 10px;border-radius:5px}
+  body.printing-analysis .analysis-overview{grid-template-columns:repeat(4,1fr);gap:6px}
+  body.printing-analysis .analysis-stat{min-height:100px;padding:7px 6px 10px;border-radius:7px;box-shadow:none}
+  body.printing-analysis .analysis-stat:after{height:4px}
+  body.printing-analysis .analysis-stat-icon{width:24px;height:24px;margin-bottom:4px;font-size:12px}
+  body.printing-analysis .analysis-stat-label{min-height:23px;font-size:8px}
+  body.printing-analysis .analysis-stat-value{font-size:15px;margin-top:3px}
+  body.printing-analysis .analysis-stat-note{font-size:7px;margin-top:2px}
+  body.printing-analysis .analysis-donut{width:45px;height:45px;margin-top:3px}
+  body.printing-analysis .analysis-donut:after{inset:7px}
+  body.printing-analysis .analysis-donut strong{font-size:11px}
+  body.printing-analysis .analysis-table-wrap{overflow:hidden;border-radius:7px}
+  body.printing-analysis .analysis-table{display:table;min-width:0;font-size:9px}
+  body.printing-analysis .analysis-table thead{display:table-header-group}
+  body.printing-analysis .analysis-table tbody{display:table-row-group}
+  body.printing-analysis .analysis-table tbody tr{display:table-row;background:#fff;box-shadow:none}
+  body.printing-analysis .analysis-table th{padding:6px 5px;font-size:7px}
+  body.printing-analysis .analysis-table td{display:table-cell;padding:6px 5px;border-bottom:1px solid #e5ebe6}
+  body.printing-analysis .analysis-table td:before{display:none !important}
+  body.printing-analysis .analysis-rank{min-width:110px;gap:6px}
+  body.printing-analysis .analysis-medal{width:22px;height:22px;flex-basis:22px;font-size:9px}
+  body.printing-analysis .analysis-class-name{font-size:9px}
+  body.printing-analysis .analysis-money,body.printing-analysis .analysis-family{font-size:9px}
+  body.printing-analysis .analysis-money small,body.printing-analysis .analysis-family small{font-size:7px}
+  body.printing-analysis .analysis-pct{font-size:12px}
+  body.printing-analysis .analysis-bar-cell{min-width:105px}
+  body.printing-analysis .analysis-bar-track{height:8px}
+  body.printing-analysis .analysis-bar-scale{font-size:6px;margin-top:2px}
+  body.printing-analysis .analysis-summary-box{padding:8px 10px;border-radius:7px}
+  body.printing-analysis .analysis-summary-grid{grid-template-columns:repeat(2,1fr);gap:5px 10px}
+  body.printing-analysis .analysis-summary-item{gap:6px;font-size:8px;line-height:1.35}
+  body.printing-analysis .analysis-check{width:14px;height:14px;flex-basis:14px;font-size:8px}
+  body.printing-analysis .analysis-empty{padding:18px;font-size:9px}
 }
 
 /* ===== FAMILY MODEL (RM70 one-off) ===== */
@@ -589,13 +647,13 @@ let authRole = null; // 'guru', 'bendahari', atau null
 let treasurerTab = 'pengesahan';
 let treasurerAnalysisLevel = 'tahun1';
 const TREASURER_ANALYSIS_LEVELS = [
-  { id: 'pra', label: 'Pra Sekolah', prefix: 'PRASEKOLAH' },
   { id: 'tahun1', label: 'Tahun 1', prefix: 'TAHUN 1' },
   { id: 'tahun2', label: 'Tahun 2', prefix: 'TAHUN 2' },
   { id: 'tahun3', label: 'Tahun 3', prefix: 'TAHUN 3' },
   { id: 'tahun4', label: 'Tahun 4', prefix: 'TAHUN 4' },
   { id: 'tahun5', label: 'Tahun 5', prefix: 'TAHUN 5' },
-  { id: 'tahun6', label: 'Tahun 6', prefix: 'TAHUN 6' }
+  { id: 'tahun6', label: 'Tahun 6', prefix: 'TAHUN 6' },
+  { id: 'pra', label: 'Pra Sekolah', prefix: 'PRASEKOLAH' }
 ];
 
 async function sha256hex(str) {
@@ -903,10 +961,10 @@ function dataAnalisisAras(level) {
   const peratus = sasaran ? Math.min(100, Math.round(terkumpul / sasaran * 100)) : 0;
   return { kelas, terkumpul, sasaran, keluarga, lunas, peratus };
 }
-function renderAnalisisBendahari() {
-  const level = TREASURER_ANALYSIS_LEVELS.find(item => item.id === treasurerAnalysisLevel) || TREASURER_ANALYSIS_LEVELS[1];
+function renderAnalisisBendahari(levelOverride = null, printMode = false) {
+  const level = levelOverride || TREASURER_ANALYSIS_LEVELS.find(item => item.id === treasurerAnalysisLevel) || TREASURER_ANALYSIS_LEVELS[0];
   const data = dataAnalisisAras(level);
-  const pilihanAras = TREASURER_ANALYSIS_LEVELS.map(item =>
+  const pilihanAras = printMode ? '' : TREASURER_ANALYSIS_LEVELS.map(item =>
     `<button class="analysis-level-btn ${item.id === level.id ? 'active' : ''}" type="button" aria-pressed="${item.id === level.id}" onclick="setTreasurerAnalysisLevel('${item.id}')">${item.label}</button>`
   ).join('');
 
@@ -949,18 +1007,46 @@ function renderAnalisisBendahari() {
     </div></div>
   </section>`;
 
-  return `<div class="analysis-dashboard">
+  const butangCetak = printMode ? '' : `<button class="analysis-print-action" type="button" onclick="cetakAnalisisBendahari()" title="Cetak semua aras sebagai PDF" aria-label="Cetak semua analisis sebagai PDF"><span class="analysis-print-icon" aria-hidden="true">🖨</span><span class="analysis-print-text">Cetak PDF</span></button>`;
+  const pemilihAras = printMode ? '' : `<div class="analysis-level-wrap"><div class="analysis-level-label">Pilih pecahan analisis</div><div class="analysis-levels">${pilihanAras}</div></div>`;
+  return `<div class="analysis-dashboard${printMode ? ' analysis-print-version' : ''}">
     <div class="analysis-hero"><div class="analysis-hero-main">
       <img class="analysis-logo" src="https://i.imgur.com/wpfWEN4.jpeg" alt="Logo SK Sri Aman">
       <div><div class="analysis-eyebrow">PIBG SK Sri Aman</div><div class="analysis-title">Statistik Kutipan <span>Sumbangan PIBG ${new Date().getFullYear()}</span></div><div class="analysis-subtitle">${level.label} · Berdasarkan transaksi yang telah disahkan bendahari</div></div>
-    </div></div>
-    <div class="analysis-level-wrap"><div class="analysis-level-label">Pilih pecahan analisis</div><div class="analysis-levels">${pilihanAras}</div></div>
+    </div>${butangCetak}</div>
+    ${pemilihAras}
     <div class="analysis-content">
       ${ringkasan}
       <section class="analysis-section"><div class="analysis-section-title"><span>2. Prestasi Mengikut Kelas</span></div>${prestasi}</section>
       ${rumusan}
     </div>
   </div>`;
+}
+function cetakAnalisisBendahari() {
+  const lama = document.getElementById('analysis-print-root');
+  if (lama) lama.remove();
+
+  const printRoot = document.createElement('div');
+  printRoot.id = 'analysis-print-root';
+  printRoot.setAttribute('aria-hidden', 'true');
+  printRoot.innerHTML = TREASURER_ANALYSIS_LEVELS.map(level =>
+    `<section class="analysis-print-page">${renderAnalisisBendahari(level, true)}</section>`
+  ).join('');
+  document.body.appendChild(printRoot);
+  document.body.classList.add('printing-analysis');
+
+  let selesai = false;
+  const bersihkan = () => {
+    if (selesai) return;
+    selesai = true;
+    document.body.classList.remove('printing-analysis');
+    printRoot.remove();
+  };
+  window.addEventListener('afterprint', bersihkan, { once: true });
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    try { window.print(); }
+    finally { bersihkan(); }
+  }));
 }
 function setTreasurerTab(tab) {
   if (!['pengesahan', 'sejarah', 'analisis'].includes(tab)) return;
