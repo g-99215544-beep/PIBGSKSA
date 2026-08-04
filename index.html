@@ -645,8 +645,9 @@ const AUTH_TTL_MS = 24 * 60 * 60 * 1000; // 24 jam
 let authedClass = null; // kelas yang sedang log masuk (atau null)
 let authRole = null; // 'guru', 'bendahari', atau null
 let treasurerTab = 'pengesahan';
-let treasurerAnalysisLevel = 'tahun1';
+let treasurerAnalysisLevel = 'keseluruhan';
 const TREASURER_ANALYSIS_LEVELS = [
+  { id: 'keseluruhan', label: 'Keseluruhan', prefix: '', isOverall: true },
   { id: 'tahun1', label: 'Tahun 1', prefix: 'TAHUN 1' },
   { id: 'tahun2', label: 'Tahun 2', prefix: 'TAHUN 2' },
   { id: 'tahun3', label: 'Tahun 3', prefix: 'TAHUN 3' },
@@ -906,6 +907,16 @@ function setTreasurerAnalysisLevel(levelId) {
   treasurerAnalysisLevel = levelId;
   renderTreasurerDashboard();
 }
+function normalisasiIcPenjaga(ic) {
+  return String(ic || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+}
+function kunciKeluarga(familyId, famOverride = null) {
+  const fam = famOverride || familiesCache[familyId] || {};
+  const ic = normalisasiIcPenjaga(fam.ic);
+  // IC penjaga ialah pengenal utama keluarga. Rekod tanpa IC kekal berasingan
+  // menggunakan familyId supaya keluarga berlainan tidak tersalah digabungkan.
+  return ic ? `ic:${ic}` : `family:${familyId}`;
+}
 function dataAnalisisAras(level) {
   const kelasSet = new Set();
   const keluargaKelas = {};
@@ -913,13 +924,14 @@ function dataAnalisisAras(level) {
 
   Object.entries(familiesCache).forEach(([familyId, fam]) => {
     if (!fam) return;
+    const familyKey = kunciKeluarga(familyId, fam);
     const kelasAnak = [...new Set(Object.values(fam.anak || {}).map(anak => anak && anak.kelas).filter(Boolean))]
       .filter(kelas => kelas.startsWith(level.prefix));
     kelasAnak.forEach(kelas => {
       kelasSet.add(kelas);
       if (!keluargaKelas[kelas]) keluargaKelas[kelas] = new Set();
-      keluargaKelas[kelas].add(familyId);
-      semuaKeluarga.add(familyId);
+      keluargaKelas[kelas].add(familyKey);
+      semuaKeluarga.add(familyKey);
     });
   });
 
@@ -935,19 +947,20 @@ function dataAnalisisAras(level) {
     kelasSet.add(kelas);
     bayaranKelas[kelas] = (bayaranKelas[kelas] || 0) + jumlah;
     if (resit.familyId) {
+      const familyKey = kunciKeluarga(resit.familyId);
       if (!bayaranKeluargaKelas[kelas]) bayaranKeluargaKelas[kelas] = {};
-      bayaranKeluargaKelas[kelas][resit.familyId] = (bayaranKeluargaKelas[kelas][resit.familyId] || 0) + jumlah;
-      bayaranKeluargaAras[resit.familyId] = (bayaranKeluargaAras[resit.familyId] || 0) + jumlah;
+      bayaranKeluargaKelas[kelas][familyKey] = (bayaranKeluargaKelas[kelas][familyKey] || 0) + jumlah;
+      bayaranKeluargaAras[familyKey] = (bayaranKeluargaAras[familyKey] || 0) + jumlah;
     }
   });
 
-  const kelas = [...kelasSet].map(nama => {
+  let kelas = [...kelasSet].map(nama => {
     const keluargaIds = keluargaKelas[nama] || new Set();
     const keluarga = keluargaIds.size;
     const terkumpul = bayaranKelas[nama] || 0;
     const sasaran = keluarga * FAM_TARGET;
-    const lunas = [...keluargaIds].filter(familyId =>
-      ((bayaranKeluargaKelas[nama] || {})[familyId] || 0) >= FAM_TARGET
+    const lunas = [...keluargaIds].filter(familyKey =>
+      ((bayaranKeluargaKelas[nama] || {})[familyKey] || 0) >= FAM_TARGET
     ).length;
     const peratus = sasaran ? Math.min(100, Math.round(terkumpul / sasaran * 100)) : 0;
     return { nama, keluarga, lunas, terkumpul, sasaran, peratus };
@@ -957,13 +970,31 @@ function dataAnalisisAras(level) {
   const terkumpul = resitDisahkan.reduce((sum, resit) => sum + Number(resit.jumlah || 0), 0);
   const keluarga = semuaKeluarga.size;
   const sasaran = keluarga * FAM_TARGET;
-  const lunas = [...semuaKeluarga].filter(familyId => (bayaranKeluargaAras[familyId] || 0) >= FAM_TARGET).length;
+  const lunas = [...semuaKeluarga].filter(familyKey => (bayaranKeluargaAras[familyKey] || 0) >= FAM_TARGET).length;
   const peratus = sasaran ? Math.min(100, Math.round(terkumpul / sasaran * 100)) : 0;
+  if (level.isOverall) {
+    // Paparan keseluruhan diringkaskan mengikut tahun. Butiran kelas masih
+    // tersedia apabila bendahari memilih tab tahun masing-masing.
+    kelas = TREASURER_ANALYSIS_LEVELS.filter(item => !item.isOverall).map(item => {
+      const pecahan = dataAnalisisAras(item);
+      return {
+        nama: item.label,
+        keluarga: pecahan.keluarga,
+        lunas: pecahan.lunas,
+        terkumpul: pecahan.terkumpul,
+        sasaran: pecahan.sasaran,
+        peratus: pecahan.peratus
+      };
+    }).filter(item => item.keluarga || item.terkumpul)
+      .sort((a, b) => b.peratus - a.peratus || b.terkumpul - a.terkumpul || a.nama.localeCompare(b.nama));
+  }
   return { kelas, terkumpul, sasaran, keluarga, lunas, peratus };
 }
 function renderAnalisisBendahari(levelOverride = null, printMode = false) {
   const level = levelOverride || TREASURER_ANALYSIS_LEVELS.find(item => item.id === treasurerAnalysisLevel) || TREASURER_ANALYSIS_LEVELS[0];
   const data = dataAnalisisAras(level);
+  const skopRumusan = level.isOverall ? 'seluruh sekolah' : level.label;
+  const labelPecahan = level.isOverall ? 'Tahun' : 'Kelas';
   const pilihanAras = printMode ? '' : TREASURER_ANALYSIS_LEVELS.map(item =>
     `<button class="analysis-level-btn ${item.id === level.id ? 'active' : ''}" type="button" aria-pressed="${item.id === level.id}" onclick="setTreasurerAnalysisLevel('${item.id}')">${item.label}</button>`
   ).join('');
@@ -978,7 +1009,7 @@ function renderAnalisisBendahari(levelOverride = null, printMode = false) {
     </div>
   </section>`;
 
-  let prestasi = '<div class="analysis-empty">Tiada data keluarga atau kutipan disahkan untuk aras ini.</div>';
+  let prestasi = `<div class="analysis-empty">Tiada data keluarga atau kutipan disahkan untuk ${level.isOverall ? 'sekolah ini' : 'aras ini'}.</div>`;
   if (data.kelas.length) {
     const rows = data.kelas.map((item, index) => `<tr>
       <td><div class="analysis-rank"><span class="analysis-medal rank-${index + 1}">${index + 1}</span><span class="analysis-class-name">${item.nama}</span></div></td>
@@ -988,7 +1019,7 @@ function renderAnalisisBendahari(levelOverride = null, printMode = false) {
       <td class="analysis-bar-cell" data-label="Graf Peratus"><div class="analysis-bar-track"><div class="analysis-bar-fill" style="width:${item.peratus}%"></div></div><div class="analysis-bar-scale"><span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span></div></td>
     </tr>`).join('');
     prestasi = `<div class="analysis-table-wrap"><table class="analysis-table">
-      <thead><tr><th>Kelas</th><th>Kutipan / Sasaran</th><th>Keluarga Lunas</th><th>Pencapaian</th><th>Graf Peratus</th></tr></thead>
+      <thead><tr><th>${labelPecahan}</th><th>Kutipan / Sasaran</th><th>Keluarga Lunas</th><th>Pencapaian</th><th>Graf Peratus</th></tr></thead>
       <tbody>${rows}</tbody>
     </table></div>`;
   }
@@ -1000,9 +1031,9 @@ function renderAnalisisBendahari(levelOverride = null, printMode = false) {
   const rumusan = `<section class="analysis-section">
     <div class="analysis-section-title"><span>3. Rumusan Keseluruhan</span></div>
     <div class="analysis-summary-box"><div class="analysis-summary-grid">
-      <div class="analysis-summary-item"><span class="analysis-check">✓</span><span>Jumlah kutipan ${level.label} ialah <strong>${formatRMAnalisis(data.terkumpul)}</strong> daripada sasaran <strong>${formatRMAnalisis(data.sasaran)}</strong>.</span></div>
+      <div class="analysis-summary-item"><span class="analysis-check">✓</span><span>Jumlah kutipan ${skopRumusan} ialah <strong>${formatRMAnalisis(data.terkumpul)}</strong> daripada sasaran <strong>${formatRMAnalisis(data.sasaran)}</strong>.</span></div>
       <div class="analysis-summary-item"><span class="analysis-check">✓</span><span>Peratus kutipan keseluruhan ialah <strong>${data.peratus}%</strong>.</span></div>
-      <div class="analysis-summary-item"><span class="analysis-check">✓</span><span>Seramai <strong>${data.lunas} daripada ${data.keluarga} keluarga</strong> telah melunaskan sumbangan PIBG melalui aras ini.</span></div>
+      <div class="analysis-summary-item"><span class="analysis-check">✓</span><span>Seramai <strong>${data.lunas} daripada ${data.keluarga} keluarga</strong> telah melunaskan sumbangan PIBG ${level.isOverall ? 'di seluruh sekolah' : 'melalui aras ini'}.</span></div>
       <div class="analysis-summary-item"><span class="analysis-check">✓</span><span>${rumusanTerbaik}</span></div>
     </div></div>
   </section>`;
@@ -1012,12 +1043,12 @@ function renderAnalisisBendahari(levelOverride = null, printMode = false) {
   return `<div class="analysis-dashboard${printMode ? ' analysis-print-version' : ''}">
     <div class="analysis-hero"><div class="analysis-hero-main">
       <img class="analysis-logo" src="https://i.imgur.com/wpfWEN4.jpeg" alt="Logo SK Sri Aman">
-      <div><div class="analysis-eyebrow">PIBG SK Sri Aman</div><div class="analysis-title">Statistik Kutipan <span>Sumbangan PIBG ${new Date().getFullYear()}</span></div><div class="analysis-subtitle">${level.label} · Berdasarkan transaksi yang telah disahkan bendahari</div></div>
+      <div><div class="analysis-eyebrow">PIBG SK Sri Aman</div><div class="analysis-title">Statistik Kutipan <span>Sumbangan PIBG ${new Date().getFullYear()}</span></div><div class="analysis-subtitle">${level.isOverall ? 'Keseluruhan sekolah' : level.label} · Berdasarkan transaksi yang telah disahkan bendahari</div></div>
     </div>${butangCetak}</div>
     ${pemilihAras}
     <div class="analysis-content">
       ${ringkasan}
-      <section class="analysis-section"><div class="analysis-section-title"><span>2. Prestasi Mengikut Kelas</span></div>${prestasi}</section>
+      <section class="analysis-section"><div class="analysis-section-title"><span>2. Prestasi Mengikut ${labelPecahan}</span></div>${prestasi}</section>
       ${rumusan}
     </div>
   </div>`;
