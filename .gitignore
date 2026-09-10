@@ -7,3 +7,6 @@ Kata Laluan*.pdf
 
 # Tetapan tempatan Claude Code
 .claude/
+
+# Worktrees tempatan untuk pembangunan ciri
+.worktrees/

@@ -118,6 +118,8 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 .fam-penjaga-sub{font-size:11px;color:var(--text2);margin-top:2px}
 .fam-statuspill{padding:5px 12px;border-radius:20px;font-size:12px;font-weight:700;height:fit-content;white-space:nowrap}
 .pill-lunas{background:var(--green-light);color:var(--green-dark)}
+.pill-dikecualikan{background:#f3e8ff;color:#7e22ce}
+.pill-menunggu{background:#fff7d6;color:#92400e}
 .pill-separa{background:#FEF3C7;color:#B45309}
 .pill-belum{background:#f5f5f0;color:var(--gray)}
 .fam-anak{background:var(--bg);border-radius:10px;padding:10px 12px;margin-bottom:12px}
@@ -267,7 +269,9 @@ function showError(msg) {
 
 function famStatus(fam) {
   const terkumpul = fam && fam.terkumpul ? fam.terkumpul : 0;
+  if (fam && fam.pengecualian && fam.pengecualian.status === 'diluluskan') return {cls:'dikecualikan', terkumpul, baki:0};
   const baki = Math.max(0, FAM_TARGET - terkumpul);
+  if (fam && fam.pengecualian && fam.pengecualian.status === 'menunggu') return {cls:'menunggu-pengecualian', terkumpul, baki};
   if (terkumpul <= 0) return {cls:'belum', terkumpul, baki};
   if (baki <= 0)      return {cls:'lunas', terkumpul, baki:0};
   return {cls:'separa', terkumpul, baki};
@@ -294,8 +298,8 @@ function renderFamily() {
     .sort((a, b) => (a.nama || '').localeCompare(b.nama || ''))
     .map(a => `<div class="fam-anak-item"><span>${a.nama}</span><span class="ak">${a.kelas || ''}</span></div>`).join('');
   const pct = Math.min(100, Math.round(st.terkumpul / FAM_TARGET * 100));
-  const pillCls = st.cls === 'lunas' ? 'pill-lunas' : st.cls === 'separa' ? 'pill-separa' : 'pill-belum';
-  const pillTxt = st.cls === 'lunas' ? '✓ LUNAS' : st.cls === 'separa' ? 'SEPARA' : 'BELUM BAYAR';
+  const pillCls = st.cls === 'lunas' ? 'pill-lunas' : st.cls === 'dikecualikan' ? 'pill-dikecualikan' : st.cls === 'menunggu-pengecualian' ? 'pill-menunggu' : st.cls === 'separa' ? 'pill-separa' : 'pill-belum';
+  const pillTxt = st.cls === 'lunas' ? '✓ LUNAS' : st.cls === 'dikecualikan' ? 'DIKECUALIKAN' : st.cls === 'menunggu-pengecualian' ? 'PENGECUALIAN MENUNGGU' : st.cls === 'separa' ? 'SEPARA' : 'BELUM BAYAR';
 
   const entriObj = fam.entri || {};
   const entri = Object.values(entriObj).filter(Boolean).sort((a, b) => (a.resitNo || '').localeCompare(b.resitNo || ''));
