@@ -455,6 +455,7 @@ select:focus{outline:none;border-color:var(--green)}
 .fam-penjaga-sub{font-size:12px;color:var(--text2);margin-top:2px}
 .fam-statuspill{padding:5px 12px;border-radius:20px;font-size:13px;font-weight:700;height:fit-content;white-space:nowrap}
 .pill-lunas{background:var(--green-light);color:var(--green-dark)}
+.pill-dikecualikan{background:#f3e8ff;color:#7e22ce}
 .pill-separa{background:#FEF3C7;color:#B45309}
 .pill-belum{background:#f5f5f0;color:var(--gray)}
 .fam-anak{background:var(--bg);border-radius:10px;padding:10px 12px;margin-bottom:12px}
@@ -845,6 +846,14 @@ function famStatus(fam) {
   if (terkumpul <= 0) return {cls:'belum', terkumpul, baki};
   if (baki <= 0)      return {cls:'lunas', terkumpul, baki:0};
   return {cls:'separa', terkumpul, baki};
+}
+function bolehRekodBayaran(fam) {
+  const status = fam && fam.pengecualian ? fam.pengecualian.status : '';
+  return !!fam && status !== 'menunggu' && status !== 'diluluskan';
+}
+function bolehMohonPengecualian(fam) {
+  const status = fam && fam.pengecualian ? fam.pengecualian.status : '';
+  return !!fam && Number(fam.terkumpul || 0) <= 0 && status !== 'menunggu' && status !== 'diluluskan';
 }
 function ringkasanStatusKeluargaKelas(keluarga) {
   return keluarga.reduce((ringkasan, fam) => {
@@ -1312,7 +1321,7 @@ function renderFamilyModal() {
     .sort((a, b) => (a.nama || '').localeCompare(b.nama || ''))
     .map(a => `<div class="fam-anak-item"><span>${a.nama}</span><span class="ak">${a.kelas || ''}</span></div>`).join('');
   const pct = Math.min(100, Math.round(st.terkumpul / FAM_TARGET * 100));
-  const pillCls = st.cls === 'lunas' ? 'pill-lunas' : st.cls === 'separa' ? 'pill-separa' : 'pill-belum';
+  const pillCls = st.cls === 'lunas' ? 'pill-lunas' : st.cls === 'dikecualikan' ? 'pill-dikecualikan' : st.cls === 'separa' ? 'pill-separa' : 'pill-belum';
   const pillTxt = st.cls === 'lunas' ? '✓ LUNAS' : st.cls === 'dikecualikan' ? 'DIKECUALIKAN' : st.cls === 'menunggu-pengecualian' ? 'MENUNGGU PENGESAHAN' : st.cls === 'separa' ? 'SEPARA' : 'BELUM BAYAR';
 
   const entriObj = fam.entri || {};
@@ -1357,7 +1366,7 @@ function renderFamilyModal() {
         </div>
       </div>`;
   }
-  const exemptionSection = canEdit() && st.cls !== 'dikecualikan' && st.cls !== 'menunggu-pengecualian' && st.terkumpul <= 0
+  const exemptionSection = canEdit() && bolehMohonPengecualian(fam)
     ? `<div class="pay-section"><div class="pay-label">PENGECUALIAN YURAN</div><div class="viewonly-note">Untuk keluarga murid yang sangat memerlukan. Permohonan ini meliputi semua adik-beradik dan perlu disahkan bendahari.</div><button class="btn-rekod" type="button" onclick="mohonPengecualian()">Mohon Pengecualian</button></div>`
     : '';
 
@@ -1395,14 +1404,15 @@ async function mohonPengecualian() {
   if (!canEdit()) { alert('Hanya guru kelas yang log masuk boleh memohon pengecualian.'); return; }
   const fid = currentFamilyId;
   const fam = familiesCache[fid];
-  if (!fam || famStatus(fam).terkumpul > 0) { alert('Pengecualian hanya boleh dimohon sebelum bayaran direkodkan.'); return; }
+  if (!bolehMohonPengecualian(fam)) { alert('Pengecualian hanya boleh dimohon sebelum bayaran direkodkan atau selepas permohonan terdahulu diproses.'); return; }
   const anakNames = Object.values(fam.anak || {}).map(a => a.nama).filter(Boolean);
   if (!confirm(`Mohon pengecualian yuran PIBG untuk keluarga ${fam.penjaga || ''}?\n\nIa meliputi: ${anakNames.join(', ') || 'semua anak dalam keluarga'}\n\nPermohonan perlu disahkan oleh bendahari.`)) return;
   try {
     const masa = Date.now();
-    const result = await db.ref('pibgsksaapp/families/' + fid + '/pengecualian').transaction(cur => {
-      if (cur && (cur.status === 'menunggu' || cur.status === 'diluluskan')) return;
-      return { status: 'menunggu', dimohonPada: masa, dimohonOleh: authedClass, kelasMohon: selectedKelas };
+    const result = await db.ref('pibgsksaapp/families/' + fid).transaction(cur => {
+      if (!bolehMohonPengecualian(cur)) return;
+      cur.pengecualian = { status: 'menunggu', dimohonPada: masa, dimohonOleh: authedClass, kelasMohon: selectedKelas };
+      return cur;
     });
     if (!result.committed) { alert('Permohonan pengecualian telah wujud atau sudah disahkan.'); }
   } catch (e) { alert('Ralat memohon pengecualian: ' + e.message); }
@@ -1414,7 +1424,7 @@ async function rekodBayaran() {
   const fam = familiesCache[fid];
   if (!fam) return;
   const st = famStatus(fam);
-  if (st.cls === 'dikecualikan' || st.cls === 'menunggu-pengecualian') { alert('Bayaran tidak boleh direkodkan semasa keluarga dikecualikan atau menunggu pengesahan.'); return; }
+  if (!bolehRekodBayaran(fam)) { alert('Bayaran tidak boleh direkodkan semasa keluarga dikecualikan atau menunggu pengesahan.'); return; }
   const inp = document.getElementById('pay-amt');
   const amt = parseFloat(inp.value);
   if (!amt || amt <= 0) { alert('Sila masukkan jumlah bayaran yang sah.'); return; }
@@ -1438,8 +1448,8 @@ async function rekodBayaran() {
       return next;
     });
     let terkumpulSelepas, bakiSelepas;
-    await db.ref('pibgsksaapp/families/' + fid).transaction(cur => {
-      if (!cur) return cur;
+    const paymentResult = await db.ref('pibgsksaapp/families/' + fid).transaction(cur => {
+      if (!bolehRekodBayaran(cur)) return;
       const baru = (cur.terkumpul || 0) + amt;
       terkumpulSelepas = baru;
       bakiSelepas = Math.max(0, FAM_TARGET - baru);
@@ -1450,6 +1460,7 @@ async function rekodBayaran() {
       cur.entri[resitNo] = { resitNo, jumlah: amt, tarikh, kelasRekod: selectedKelas, statusPengesahan: 'menunggu' };
       return cur;
     });
+    if (!paymentResult.committed) { alert('Bayaran tidak direkodkan kerana status pengecualian keluarga telah berubah.'); if (btn) { btn.disabled = false; btn.textContent = 'Jana Resit'; } return; }
     await db.ref('pibgsksaapp/receipts/' + resitNo).set({
       resitNo, tarikh, jenis: 'keluarga',
       familyId: fid, penjaga: fam.penjaga || '', ic: fam.ic || '',
