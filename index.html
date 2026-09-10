@@ -72,6 +72,9 @@ select:focus{outline:none;border-color:var(--green)}
 .s-badge{padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;white-space:nowrap;flex-shrink:0}
 .badge-bayar{background:var(--green-light);color:var(--green-dark)}
 .badge-belum{background:#f5f5f0;color:var(--gray)}
+.badge-dikecualikan{background:#f3e8ff;color:#7e22ce}
+.badge-pending-exemption{background:#fff7d6;color:#92400e}
+.student-row.dikecualikan{background:#faf5ff;border-color:#d8b4fe}
 
 .s-action{padding:6px 12px;border-radius:7px;border:none;font-size:13px;font-weight:600;cursor:pointer;flex-shrink:0}
 .btn-lihat{background:var(--green-light);color:var(--green-dark)}
@@ -214,6 +217,8 @@ select:focus{outline:none;border-color:var(--green)}
 .btn-sahkan{background:var(--green);color:#fff;border:none;border-radius:7px;padding:8px 12px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap}
 .btn-sahkan:hover{background:var(--green-dark)}
 .btn-sahkan:disabled{background:#bbb;cursor:not-allowed}
+.btn-tolak{background:#fff;color:#b91c1c;border:1px solid #fecaca;border-radius:7px;padding:8px 12px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap}
+.btn-tolak:hover{background:#fff1f2}
 .treasurer-empty{padding:36px 16px;text-align:center;color:var(--text2);background:var(--card);border:1px solid var(--border);border-radius:8px;font-size:14px}
 .treasurer-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
 .summary-card{background:var(--card);border:1px solid var(--border);border-left:4px solid var(--gray);border-radius:8px;padding:12px 14px}
@@ -833,10 +838,25 @@ function famOf(studentKey) {
 }
 function famStatus(fam) {
   const terkumpul = fam && fam.terkumpul ? fam.terkumpul : 0;
+  const statusPengecualian = fam && fam.pengecualian ? fam.pengecualian.status : '';
+  if (statusPengecualian === 'diluluskan') return {cls:'dikecualikan', terkumpul, baki:0};
   const baki = Math.max(0, FAM_TARGET - terkumpul);
+  if (statusPengecualian === 'menunggu') return {cls:'menunggu-pengecualian', terkumpul, baki};
   if (terkumpul <= 0) return {cls:'belum', terkumpul, baki};
   if (baki <= 0)      return {cls:'lunas', terkumpul, baki:0};
   return {cls:'separa', terkumpul, baki};
+}
+function ringkasanStatusKeluargaKelas(keluarga) {
+  return keluarga.reduce((ringkasan, fam) => {
+    const status = famStatus(fam);
+    if (status.cls === 'dikecualikan') ringkasan.dikecualikan += 1;
+    else {
+      ringkasan.sasaran += FAM_TARGET;
+      if (status.cls === 'lunas') ringkasan.lunas += 1;
+      else ringkasan.belumPenuh += 1;
+    }
+    return ringkasan;
+  }, { lunas: 0, dikecualikan: 0, belumPenuh: 0, sasaran: 0 });
 }
 function rm(n) { return 'RM ' + Number(n || 0).toFixed(2); }
 
@@ -921,10 +941,12 @@ function dataAnalisisAras(level) {
   const kelasSet = new Set();
   const keluargaKelas = {};
   const semuaKeluarga = new Set();
+  const keluargaDikecualikan = new Set();
 
   Object.entries(familiesCache).forEach(([familyId, fam]) => {
     if (!fam) return;
     const familyKey = kunciKeluarga(familyId, fam);
+    if (famStatus(fam).cls === 'dikecualikan') keluargaDikecualikan.add(familyKey);
     const kelasAnak = [...new Set(Object.values(fam.anak || {}).map(anak => anak && anak.kelas).filter(Boolean))]
       .filter(kelas => kelas.startsWith(level.prefix));
     kelasAnak.forEach(kelas => {
@@ -956,21 +978,24 @@ function dataAnalisisAras(level) {
 
   let kelas = [...kelasSet].map(nama => {
     const keluargaIds = keluargaKelas[nama] || new Set();
-    const keluarga = keluargaIds.size;
+    const keluargaAktif = [...keluargaIds].filter(familyKey => !keluargaDikecualikan.has(familyKey));
+    const keluarga = keluargaAktif.length;
+    const dikecualikan = keluargaIds.size - keluarga;
     const terkumpul = bayaranKelas[nama] || 0;
     const sasaran = keluarga * FAM_TARGET;
-    const lunas = [...keluargaIds].filter(familyKey =>
+    const lunas = keluargaAktif.filter(familyKey =>
       ((bayaranKeluargaKelas[nama] || {})[familyKey] || 0) >= FAM_TARGET
     ).length;
     const peratus = sasaran ? Math.min(100, Math.round(terkumpul / sasaran * 100)) : 0;
-    return { nama, keluarga, lunas, terkumpul, sasaran, peratus };
-  }).filter(item => item.keluarga || item.terkumpul)
+    return { nama, keluarga, dikecualikan, lunas, terkumpul, sasaran, peratus };
+  }).filter(item => item.keluarga || item.dikecualikan || item.terkumpul)
     .sort((a, b) => b.peratus - a.peratus || b.terkumpul - a.terkumpul || susunKelas(a.nama, b.nama));
 
   const terkumpul = resitDisahkan.reduce((sum, resit) => sum + Number(resit.jumlah || 0), 0);
-  const keluarga = semuaKeluarga.size;
+  const keluarga = [...semuaKeluarga].filter(familyKey => !keluargaDikecualikan.has(familyKey)).length;
+  const dikecualikan = semuaKeluarga.size - keluarga;
   const sasaran = keluarga * FAM_TARGET;
-  const lunas = [...semuaKeluarga].filter(familyKey => (bayaranKeluargaAras[familyKey] || 0) >= FAM_TARGET).length;
+  const lunas = [...semuaKeluarga].filter(familyKey => !keluargaDikecualikan.has(familyKey) && (bayaranKeluargaAras[familyKey] || 0) >= FAM_TARGET).length;
   const peratus = sasaran ? Math.min(100, Math.round(terkumpul / sasaran * 100)) : 0;
   if (level.isOverall) {
     // Paparan keseluruhan diringkaskan mengikut tahun. Butiran kelas masih
@@ -980,15 +1005,16 @@ function dataAnalisisAras(level) {
       return {
         nama: item.label,
         keluarga: pecahan.keluarga,
+        dikecualikan: pecahan.dikecualikan,
         lunas: pecahan.lunas,
         terkumpul: pecahan.terkumpul,
         sasaran: pecahan.sasaran,
         peratus: pecahan.peratus
       };
-    }).filter(item => item.keluarga || item.terkumpul)
+    }).filter(item => item.keluarga || item.dikecualikan || item.terkumpul)
       .sort((a, b) => b.peratus - a.peratus || b.terkumpul - a.terkumpul || a.nama.localeCompare(b.nama));
   }
-  return { kelas, terkumpul, sasaran, keluarga, lunas, peratus };
+  return { kelas, terkumpul, sasaran, keluarga, dikecualikan, lunas, peratus };
 }
 function renderAnalisisBendahari(levelOverride = null, printMode = false) {
   const level = levelOverride || TREASURER_ANALYSIS_LEVELS.find(item => item.id === treasurerAnalysisLevel) || TREASURER_ANALYSIS_LEVELS[0];
@@ -1005,7 +1031,7 @@ function renderAnalisisBendahari(levelOverride = null, printMode = false) {
       <div class="analysis-stat"><div class="analysis-stat-icon">RM</div><div class="analysis-stat-label">Jumlah Kutipan</div><div class="analysis-stat-value">${formatRMAnalisis(data.terkumpul)}</div><div class="analysis-stat-note">Kutipan telah disahkan</div></div>
       <div class="analysis-stat"><div class="analysis-stat-icon">◎</div><div class="analysis-stat-label">Jumlah Sasaran</div><div class="analysis-stat-value">${formatRMAnalisis(data.sasaran)}</div><div class="analysis-stat-note">RM${FAM_TARGET} setiap keluarga</div></div>
       <div class="analysis-stat donut-stat"><div class="analysis-stat-label">Pencapaian Kutipan</div><div class="analysis-donut" style="--pct:${data.peratus}"><strong>${data.peratus}%</strong></div><div class="analysis-stat-note">Daripada sasaran keseluruhan</div></div>
-      <div class="analysis-stat"><div class="analysis-stat-icon">✓</div><div class="analysis-stat-label">Keluarga Lunas</div><div class="analysis-stat-value">${data.lunas} / ${data.keluarga}</div><div class="analysis-stat-note">${data.keluarga ? Math.round(data.lunas / data.keluarga * 100) : 0}% keluarga</div></div>
+      <div class="analysis-stat"><div class="analysis-stat-icon">✓</div><div class="analysis-stat-label">Keluarga Lunas</div><div class="analysis-stat-value">${data.lunas} / ${data.keluarga}</div><div class="analysis-stat-note">${data.dikecualikan ? data.dikecualikan + ' keluarga dikecualikan' : (data.keluarga ? Math.round(data.lunas / data.keluarga * 100) : 0) + '% keluarga'}</div></div>
     </div>
   </section>`;
 
@@ -1014,7 +1040,7 @@ function renderAnalisisBendahari(levelOverride = null, printMode = false) {
     const rows = data.kelas.map((item, index) => `<tr>
       <td><div class="analysis-rank"><span class="analysis-medal rank-${index + 1}">${index + 1}</span><span class="analysis-class-name">${item.nama}</span></div></td>
       <td class="analysis-money" data-label="Kutipan / Sasaran">${formatRMAnalisis(item.terkumpul)}<small>daripada ${formatRMAnalisis(item.sasaran)}</small></td>
-      <td class="analysis-family" data-label="Keluarga Lunas">${item.lunas} / ${item.keluarga}<small>keluarga</small></td>
+      <td class="analysis-family" data-label="Keluarga Lunas">${item.lunas} / ${item.keluarga}<small>${item.dikecualikan ? item.dikecualikan + ' dikecualikan' : 'keluarga'}</small></td>
       <td class="analysis-pct" data-label="Pencapaian">${item.peratus}%</td>
       <td class="analysis-bar-cell" data-label="Graf Peratus"><div class="analysis-bar-track"><div class="analysis-bar-fill" style="width:${item.peratus}%"></div></div><div class="analysis-bar-scale"><span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span></div></td>
     </tr>`).join('');
@@ -1080,7 +1106,7 @@ function cetakAnalisisBendahari() {
   }));
 }
 function setTreasurerTab(tab) {
-  if (!['pengesahan', 'sejarah', 'analisis'].includes(tab)) return;
+  if (!['pengesahan', 'pengecualian', 'sejarah', 'analisis'].includes(tab)) return;
   treasurerTab = tab;
   renderTreasurerDashboard();
 }
@@ -1093,8 +1119,12 @@ function renderTreasurerDashboard() {
   const pending = sejarah
     .filter(r => r.statusPengesahan !== 'disahkan')
     .sort((a, b) => (a.diciptaPada || 0) - (b.diciptaPada || 0));
+  const pengecualianMenunggu = Object.entries(familiesCache)
+    .filter(([, fam]) => fam && fam.pengecualian && fam.pengecualian.status === 'menunggu')
+    .sort(([, a], [, b]) => (a.pengecualian.dimohonPada || 0) - (b.pengecualian.dimohonPada || 0));
   const tabs = `<div class="treasurer-tabs">
     <button class="treasurer-tab ${treasurerTab === 'pengesahan' ? 'active' : ''}" onclick="setTreasurerTab('pengesahan')">Pengesahan (${pending.length})</button>
+    <button class="treasurer-tab ${treasurerTab === 'pengecualian' ? 'active' : ''}" onclick="setTreasurerTab('pengecualian')">Pengecualian (${pengecualianMenunggu.length})</button>
     <button class="treasurer-tab ${treasurerTab === 'sejarah' ? 'active' : ''}" onclick="setTreasurerTab('sejarah')">Sejarah Transaksi</button>
     <button class="treasurer-tab ${treasurerTab === 'analisis' ? 'active' : ''}" onclick="setTreasurerTab('analisis')">Analisis</button>
   </div>`;
@@ -1126,6 +1156,18 @@ function renderTreasurerDashboard() {
         return `<details class="verify-class"><summary><span>${kelas}</span><span class="verify-count">${transaksi.length}</span></summary><div class="verify-list">${rows}</div></details>`;
       }).join('');
       content = intro + sections;
+    }
+  } else if (treasurerTab === 'pengecualian') {
+    const intro = `<div class="treasurer-intro"><h2>Pengesahan Pengecualian</h2><p>${pengecualianMenunggu.length} permohonan yuran menunggu tindakan. Keluarga yang diluluskan tidak dikira dalam sasaran atau tunggakan.</p></div>`;
+    if (!pengecualianMenunggu.length) {
+      content = intro + '<div class="treasurer-empty">Tiada permohonan pengecualian menunggu pengesahan.</div>';
+    } else {
+      const rows = pengecualianMenunggu.map(([fid, fam]) => {
+        const anak = Object.values(fam.anak || {}).map(a => `${a.nama || 'Murid'}${a.kelas ? ' (' + a.kelas + ')' : ''}`).join(', ');
+        const p = fam.pengecualian;
+        return `<div class="verify-item"><div class="verify-info"><div class="verify-name">${fam.penjaga || 'Keluarga tanpa nama'}</div><div class="verify-meta">${anak || 'Tiada murid'}${p.kelasMohon ? ' | Dimohon oleh ' + p.kelasMohon : ''}${p.dimohonPada ? ' | ' + formatMasaRekod(p.dimohonPada, '') : ''}</div></div><button class="btn-tolak" onclick="tolakPengecualian('${fid}')">Tolak</button><button class="btn-sahkan" onclick="sahkanPengecualian('${fid}')">Sahkan Pengecualian</button></div>`;
+      }).join('');
+      content = intro + `<div class="history-list">${rows}</div>`;
     }
   } else if (treasurerTab === 'sejarah') {
     const intro = `<div class="treasurer-intro"><h2>Sejarah Transaksi</h2><p>Semua rekod bayaran yang telah direkodkan oleh guru kelas, termasuk transaksi yang masih menunggu pengesahan.</p></div>`;
@@ -1172,6 +1214,35 @@ async function sahkanResit(resitNo) {
   } catch (e) { alert('Ralat mengesahkan kutipan: ' + e.message); }
 }
 
+async function sahkanPengecualian(fid) {
+  if (!isTreasurer()) { alert('Hanya bendahari boleh mengesahkan pengecualian.'); return; }
+  const fam = familiesCache[fid];
+  if (!fam || !fam.pengecualian || fam.pengecualian.status !== 'menunggu') { alert('Permohonan tidak lagi menunggu pengesahan.'); return; }
+  if (!confirm(`Sahkan pengecualian yuran PIBG untuk keluarga ${fam.penjaga || 'ini'}?\n\nSemua anak dalam keluarga ini akan dikecualikan dan tidak dikira dalam sasaran kutipan.`)) return;
+  try {
+    const masa = Date.now();
+    const result = await db.ref('pibgsksaapp/families/' + fid + '/pengecualian').transaction(cur => {
+      if (!cur || cur.status !== 'menunggu') return;
+      return { ...cur, status: 'diluluskan', disahkanPada: masa, disahkanOleh: 'bendahari' };
+    });
+    if (!result.committed) alert('Permohonan ini telah diubah atau diproses oleh pengguna lain.');
+  } catch (e) { alert('Ralat mengesahkan pengecualian: ' + e.message); }
+}
+
+async function tolakPengecualian(fid) {
+  if (!isTreasurer()) { alert('Hanya bendahari boleh menolak pengecualian.'); return; }
+  const fam = familiesCache[fid];
+  if (!fam || !fam.pengecualian || fam.pengecualian.status !== 'menunggu') { alert('Permohonan tidak lagi menunggu pengesahan.'); return; }
+  if (!confirm(`Tolak permohonan pengecualian untuk keluarga ${fam.penjaga || 'ini'}?`)) return;
+  try {
+    const masa = Date.now();
+    await db.ref('pibgsksaapp/families/' + fid + '/pengecualian').transaction(cur => {
+      if (!cur || cur.status !== 'menunggu') return;
+      return { ...cur, status: 'ditolak', ditolakPada: masa, ditolakOleh: 'bendahari' };
+    });
+  } catch (e) { alert('Ralat menolak pengecualian: ' + e.message); }
+}
+
 // ===== RENDER LIST =====
 function renderStudentList() {
   const list = Object.entries(students).sort((a, b) => a[1].nama.localeCompare(b[1].nama));
@@ -1180,15 +1251,17 @@ function renderStudentList() {
     resetStats();
     return;
   }
-  let lunasCount = 0, belumPenuh = 0;
+  let lunasCount = 0, belumPenuh = 0, dikecualikanCount = 0;
   list.forEach(([k]) => {
     const fam = famOf(k); const st = famStatus(fam);
-    if (st.cls === 'lunas') lunasCount++; else belumPenuh++;
+    if (st.cls === 'lunas') lunasCount++;
+    else if (st.cls === 'dikecualikan') dikecualikanCount++;
+    else belumPenuh++;
   });
   const terkumpulKelas = jumlahTerkumpulKelas(selectedKelas);
   document.getElementById('st-total').textContent = list.length;
   document.getElementById('st-bayar').textContent = lunasCount;
-  document.getElementById('st-belum').textContent = belumPenuh;
+  document.getElementById('st-belum').textContent = dikecualikanCount ? `${belumPenuh} belum / ${dikecualikanCount} dikecualikan` : belumPenuh;
   document.getElementById('st-rm').textContent = 'RM ' + terkumpulKelas;
 
   const rows = list.map(([key, s], i) => {
@@ -1197,6 +1270,8 @@ function renderStudentList() {
     const sib = anakCount > 1 ? `<span class="fam-tag">👨‍👩‍👧 ${anakCount} adik-beradik</span>` : '';
     let badge, rowcls;
     if (st.cls === 'lunas') { badge = '<span class="s-badge badge-bayar">✓ Lunas</span>'; rowcls = 'paid'; }
+    else if (st.cls === 'dikecualikan') { badge = '<span class="s-badge badge-dikecualikan">Dikecualikan</span>'; rowcls = 'dikecualikan'; }
+    else if (st.cls === 'menunggu-pengecualian') { badge = '<span class="s-badge badge-pending-exemption">Pengecualian menunggu</span>'; rowcls = ''; }
     else if (st.cls === 'separa') { badge = `<span class="s-badge badge-separa">Baki RM${st.baki}</span>`; rowcls = 'separa'; }
     else { badge = '<span class="s-badge badge-belum">Belum</span>'; rowcls = ''; }
     return `<div class="student-row clickable ${rowcls}" onclick="openFamilyModal('${key}')">
@@ -1238,7 +1313,7 @@ function renderFamilyModal() {
     .map(a => `<div class="fam-anak-item"><span>${a.nama}</span><span class="ak">${a.kelas || ''}</span></div>`).join('');
   const pct = Math.min(100, Math.round(st.terkumpul / FAM_TARGET * 100));
   const pillCls = st.cls === 'lunas' ? 'pill-lunas' : st.cls === 'separa' ? 'pill-separa' : 'pill-belum';
-  const pillTxt = st.cls === 'lunas' ? '✓ LUNAS' : st.cls === 'separa' ? 'SEPARA' : 'BELUM BAYAR';
+  const pillTxt = st.cls === 'lunas' ? '✓ LUNAS' : st.cls === 'dikecualikan' ? 'DIKECUALIKAN' : st.cls === 'menunggu-pengecualian' ? 'MENUNGGU PENGESAHAN' : st.cls === 'separa' ? 'SEPARA' : 'BELUM BAYAR';
 
   const entriObj = fam.entri || {};
   const entri = Object.values(entriObj).filter(Boolean).sort((a, b) => (a.resitNo || '').localeCompare(b.resitNo || ''));
@@ -1256,7 +1331,11 @@ function renderFamilyModal() {
   }).join('') : '<div style="font-size:12px;color:#999;padding:6px 0">Tiada bayaran lagi.</div>';
 
   let paySection;
-  if (st.baki <= 0) {
+  if (st.cls === 'dikecualikan') {
+    paySection = `<div class="lunas-banner">Keluarga ini dikecualikan daripada sumbangan PIBG oleh bendahari.</div>`;
+  } else if (st.cls === 'menunggu-pengecualian') {
+    paySection = `<div class="viewonly-note">Permohonan pengecualian yuran sedang menunggu pengesahan bendahari.</div>`;
+  } else if (st.baki <= 0) {
     paySection = `<div class="lunas-banner">🎉 Keluarga ini telah melunaskan sumbangan RM70.</div>`;
   } else if (!canEdit()) {
     paySection = `<div class="viewonly-note">🔒 Lihat sahaja. Log masuk sebagai guru ${selectedKelas} untuk merekod bayaran.</div>`;
@@ -1278,6 +1357,9 @@ function renderFamilyModal() {
         </div>
       </div>`;
   }
+  const exemptionSection = canEdit() && st.cls !== 'dikecualikan' && st.cls !== 'menunggu-pengecualian' && st.terkumpul <= 0
+    ? `<div class="pay-section"><div class="pay-label">PENGECUALIAN YURAN</div><div class="viewonly-note">Untuk keluarga murid yang sangat memerlukan. Permohonan ini meliputi semua adik-beradik dan perlu disahkan bendahari.</div><button class="btn-rekod" type="button" onclick="mohonPengecualian()">Mohon Pengecualian</button></div>`
+    : '';
 
   document.getElementById('fam-modal-body').innerHTML = `
     <div class="fam-head">
@@ -1298,6 +1380,7 @@ function renderFamilyModal() {
     </div>
     <div class="fam-bar"><div style="width:${pct}%"></div></div>
     ${paySection}
+    ${exemptionSection}
     <div class="pay-label" style="margin-top:14px">RESIT / BAYARAN (${entri.length})</div>
     <div class="entri-list">${entriRows}</div>
   `;
@@ -1308,12 +1391,30 @@ function setPay(v) {
   if (inp) { inp.value = v; inp.focus(); }
 }
 
+async function mohonPengecualian() {
+  if (!canEdit()) { alert('Hanya guru kelas yang log masuk boleh memohon pengecualian.'); return; }
+  const fid = currentFamilyId;
+  const fam = familiesCache[fid];
+  if (!fam || famStatus(fam).terkumpul > 0) { alert('Pengecualian hanya boleh dimohon sebelum bayaran direkodkan.'); return; }
+  const anakNames = Object.values(fam.anak || {}).map(a => a.nama).filter(Boolean);
+  if (!confirm(`Mohon pengecualian yuran PIBG untuk keluarga ${fam.penjaga || ''}?\n\nIa meliputi: ${anakNames.join(', ') || 'semua anak dalam keluarga'}\n\nPermohonan perlu disahkan oleh bendahari.`)) return;
+  try {
+    const masa = Date.now();
+    const result = await db.ref('pibgsksaapp/families/' + fid + '/pengecualian').transaction(cur => {
+      if (cur && (cur.status === 'menunggu' || cur.status === 'diluluskan')) return;
+      return { status: 'menunggu', dimohonPada: masa, dimohonOleh: authedClass, kelasMohon: selectedKelas };
+    });
+    if (!result.committed) { alert('Permohonan pengecualian telah wujud atau sudah disahkan.'); }
+  } catch (e) { alert('Ralat memohon pengecualian: ' + e.message); }
+}
+
 async function rekodBayaran() {
   if (!canEdit()) { alert('Hanya guru kelas yang log masuk boleh merekod bayaran.'); return; }
   const fid = currentFamilyId;
   const fam = familiesCache[fid];
   if (!fam) return;
   const st = famStatus(fam);
+  if (st.cls === 'dikecualikan' || st.cls === 'menunggu-pengecualian') { alert('Bayaran tidak boleh direkodkan semasa keluarga dikecualikan atau menunggu pengesahan.'); return; }
   const inp = document.getElementById('pay-amt');
   const amt = parseFloat(inp.value);
   if (!amt || amt <= 0) { alert('Sila masukkan jumlah bayaran yang sah.'); return; }
